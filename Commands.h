@@ -187,7 +187,7 @@ class SmallShell {
   void executeCommand(const char* cmd_line);
   // TODO: add extra methods as needed
   std::string getName();
-  void setName(const char* to_set);
+  void setName(std::string set_name);
 
   Command* createCommand(const char *cmd_line);
 };
@@ -197,7 +197,7 @@ class ChpromptCommand : public BuiltInCommand {
     SmallShell* smash;
     std::string name_to_set;
 public:
-    ChpromptCommand(SmallShell* smash, char** args, const char* cmd_line);
+    ChpromptCommand(SmallShell* smash, std::string set_name, const char* cmd_line);
     virtual ~ChpromptCommand() {}
     void execute() override;
 };

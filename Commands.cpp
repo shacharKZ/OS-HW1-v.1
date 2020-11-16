@@ -93,20 +93,12 @@ BuiltInCommand::BuiltInCommand(const char *cmd_line) : Command(cmd_line) {};
 
 
 
-ChpromptCommand::ChpromptCommand(SmallShell* smash, char** args, const char* cmd_line) :
-        smash(smash), BuiltInCommand(cmd_line) {
-    if (args[1]) {
-        this->name_to_set = string(args[1]);
-    }
-    else {
-        this->name_to_set = "smash";
-    }
-};
-
-
+ChpromptCommand::ChpromptCommand(SmallShell* smash, string set_name, const char* cmd_line) :
+        smash(smash), name_to_set(set_name), BuiltInCommand(cmd_line) {};
 
 void ChpromptCommand::execute() {
-    smash->setName(cmd_line);
+    if (name_to_set == "") smash->setName("smash");
+    else smash->setName(name_to_set);
 };
 
 
@@ -151,7 +143,10 @@ Command * SmallShell::CreateCommand(const char* cmd_line) {
     // TODO redirect creation of command for different proposes, like pipe\io SH
 
     if (cmd_s == "chprompt") {
-        return new ChpromptCommand(this, args, cmd_line);
+        string name_to_set;
+        if (args_num>1) name_to_set = string(args[1]);
+        else name_to_set = "";
+        return new ChpromptCommand(this, name_to_set, cmd_line);
     }
     else if (cmd_s == "ls") {
 
@@ -184,9 +179,7 @@ std::string SmallShell::getName() {
     return name;
 }
 
-void SmallShell::setName(const char* to_set) {
-    if (to_set) {
-        name = to_set;
-    }
+void SmallShell::setName(string to_set) {
+    name = to_set;
 }
 
