@@ -7,8 +7,13 @@
 #define COMMAND_MAX_ARGS (20)
 #define HISTORY_MAX_RECORDS (50)
 
+
 class Command {
 // TODO: Add your data members
+
+protected:
+    const char* cmd_line;
+
  public:
   Command(const char* cmd_line);
   virtual ~Command();
@@ -19,6 +24,9 @@ class Command {
 };
 
 class BuiltInCommand : public Command {
+
+protected:
+    const char* cmd_line;
  public:
   BuiltInCommand(const char* cmd_line);
   virtual ~BuiltInCommand() {}
@@ -70,9 +78,14 @@ class ShowPidCommand : public BuiltInCommand {
   void execute() override;
 };
 
+
+
+
 class JobsList;
 class QuitCommand : public BuiltInCommand {
 // TODO: Add your data members public:
+  std::vector<Command> vec; // TODO this is my suggestion SH
+
   QuitCommand(const char* cmd_line, JobsList* jobs);
   virtual ~QuitCommand() {}
   void execute() override;
@@ -157,6 +170,8 @@ class BackgroundCommand : public BuiltInCommand {
 class SmallShell {
  private:
   // TODO: Add your data members
+  std::string name;
+  JobsList* jb;
   SmallShell();
  public:
   Command *CreateCommand(const char* cmd_line);
@@ -171,6 +186,20 @@ class SmallShell {
   ~SmallShell();
   void executeCommand(const char* cmd_line);
   // TODO: add extra methods as needed
+  std::string getName();
+  void setName(const char* to_set);
+
+  Command* createCommand(const char *cmd_line);
+};
+
+
+class ChpromptCommand : public BuiltInCommand {
+    SmallShell* smash;
+    std::string name_to_set;
+public:
+    ChpromptCommand(SmallShell* smash, char** args, const char* cmd_line);
+    virtual ~ChpromptCommand() {}
+    void execute() override;
 };
 
 #endif //SMASH_COMMAND_H_

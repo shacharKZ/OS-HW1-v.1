@@ -3,7 +3,7 @@
 #include <iostream>
 #include <vector>
 #include <sstream>
-#include <sys/wait.h>
+#include <sys/wait.h> // TODO
 #include <iomanip>
 #include "Commands.h"
 
@@ -82,7 +82,42 @@ void _removeBackgroundSign(char* cmd_line) {
   cmd_line[str.find_last_not_of(WHITESPACE, idx) + 1] = 0;
 }
 
-// TODO: Add your implementation for classes in Commands.h 
+/// --------------------------- Command V, segel codes ^ ---------------------------
+// TODO: Add your implementation for classes in Commands.h
+
+Command::Command(const char *cmd_line) : cmd_line(cmd_line) {};
+
+BuiltInCommand::BuiltInCommand(const char *cmd_line) : Command(cmd_line) {};
+
+
+
+
+
+ChpromptCommand::ChpromptCommand(SmallShell* smash, char** args, const char* cmd_line) :
+        smash(smash), BuiltInCommand(cmd_line) {
+    if (args[1]) {
+        this->name_to_set = string(args[1]);
+    }
+    else {
+        this->name_to_set = "smash";
+    }
+};
+
+
+
+void ChpromptCommand::execute() {
+    smash->setName(cmd_line);
+};
+
+
+
+
+
+
+
+
+
+ /// --------------------------- smash V, Command ^ ---------------------------
 
 SmallShell::SmallShell() {
 // TODO: add your implementation
@@ -108,7 +143,24 @@ Command * SmallShell::CreateCommand(const char* cmd_line) {
     return new ExternalCommand(cmd_line);
   }
   */
-  return nullptr;
+
+    char* args[COMMAND_MAX_ARGS];
+    int args_num = _parseCommandLine(cmd_line, args);
+    string cmd_s = string(args[0]);
+
+    // TODO redirect creation of command for different proposes, like pipe\io SH
+
+    if (cmd_s == "chprompt") {
+        return new ChpromptCommand(this, args, cmd_line);
+    }
+    else if (cmd_s == "ls") {
+
+    }
+
+
+
+    return nullptr; // TODO should not reach here SH
+
 }
 
 void SmallShell::executeCommand(const char *cmd_line) {
@@ -117,4 +169,24 @@ void SmallShell::executeCommand(const char *cmd_line) {
   // Command* cmd = CreateCommand(cmd_line);
   // cmd->execute();
   // Please note that you must fork smash process for some commands (e.g., external commands....)
+
+  Command* cmd = createCommand(cmd_line);
+  if (!cmd) {
+      return;
+  }
+  cmd->execute();
+  delete(cmd);
+
+
 }
+
+std::string SmallShell::getName() {
+    return name;
+}
+
+void SmallShell::setName(const char* to_set) {
+    if (to_set) {
+        name = to_set;
+    }
+}
+
