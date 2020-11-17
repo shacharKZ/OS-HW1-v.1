@@ -92,6 +92,16 @@ BuiltInCommand::BuiltInCommand(const char *cmd_line) : Command(cmd_line) {};
 
 
 
+ShowPidCommand::ShowPidCommand(const char* cmd_line) :
+        BuiltInCommand(cmd_line) {};
+
+void ShowPidCommand::execute() {
+    cout << "smash pid is " << getpid() << endl;
+};
+
+
+
+
 
 ChpromptCommand::ChpromptCommand(SmallShell* smash, string set_name, const char* cmd_line) :
         smash(smash), name_to_set(set_name), BuiltInCommand(cmd_line) {};
