@@ -23,7 +23,7 @@ protected:
 
  public:
   Command(const char* cmd_line);
-  virtual ~Command();
+  virtual ~Command() = default;
   virtual void execute() = 0;
   //virtual void prepare();
   //virtual void cleanup();
@@ -36,7 +36,7 @@ protected:
     const char* cmd_line;
  public:
   BuiltInCommand(const char* cmd_line);
-  virtual ~BuiltInCommand() {}
+  virtual ~BuiltInCommand() = default;
 };
 
 class ExternalCommand : public Command {
@@ -69,21 +69,21 @@ class ChangeDirCommand : public BuiltInCommand {
   char** set_dir;
 public:
   ChangeDirCommand(const char* cmd_line, char** plastPwd);
-  virtual ~ChangeDirCommand() {}
+  virtual ~ChangeDirCommand() = default;
   void execute() override;
 };
 
 class GetCurrDirCommand : public BuiltInCommand {
  public:
   GetCurrDirCommand(const char* cmd_line);
-  virtual ~GetCurrDirCommand() {}
+  virtual ~GetCurrDirCommand() = default;
   void execute() override;
 };
 
 class ShowPidCommand : public BuiltInCommand {
  public:
   ShowPidCommand(const char* cmd_line);
-  virtual ~ShowPidCommand() {}
+  virtual ~ShowPidCommand() = default;
   void execute() override;
 };
 
@@ -135,7 +135,7 @@ class JobsList {
   public:
       JobEntry(Command* command, time_t time, Status status, int id);
       JobEntry () =  delete;
-      JobEntry(JobEntry&) = delete ;
+//      JobEntry(JobEntry&) = delete ; // TODO in // for dibugging SH
       pid_t getPid();
       time_t getStartTime();
       Status getStatus();
@@ -213,24 +213,23 @@ class SmallShell {
     // Instantiated on first use.
     return instance;
   }
-  ~SmallShell();
+  ~SmallShell(); // TODO probably future valgrind problems.... SH
   void executeCommand(const char* cmd_line);
   // TODO: add extra methods as needed
   std::string getName();
   char* last_pwd;
   void setName(std::string set_name);
-
   Command* createCommand(const char *cmd_line);
 };
 
 
-class ChpromptCommand : public BuiltInCommand {
-    SmallShell* smash;
-    std::string name_to_set;
-public:
-    ChpromptCommand(SmallShell* smash, std::string set_name, const char* cmd_line);
-    virtual ~ChpromptCommand() {}
-    void execute() override;
-};
+//class ChpromptCommand : public BuiltInCommand {
+//    SmallShell* smash;
+//    std::string name_to_set;
+//public:
+//    ChpromptCommand(SmallShell* smash, std::string set_name, const char* cmd_line);
+//    virtual ~ChpromptCommand() {}
+//    void execute() override;
+//};
 
 #endif //SMASH_COMMAND_H_

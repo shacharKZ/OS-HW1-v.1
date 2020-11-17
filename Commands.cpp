@@ -9,6 +9,7 @@
 #include <assert.h>
 
 extern SmallShell& smash;
+
 using namespace std;
 
 const std::string WHITESPACE = " \n\r\t\f\v";
@@ -105,29 +106,30 @@ void ShowPidCommand::execute() {
 
 
 
-ChpromptCommand::ChpromptCommand(SmallShell* smash, string set_name, const char* cmd_line) :
-        smash(smash), name_to_set(set_name), BuiltInCommand(cmd_line) {};
+//ChpromptCommand::ChpromptCommand(SmallShell* smash, string set_name, const char* cmd_line) :
+//        smash(smash), name_to_set(set_name), BuiltInCommand(cmd_line) {};
+//
+//void ChpromptCommand::execute() {
+//    if (name_to_set == "") smash->setName("smash");
+//    else smash->setName(name_to_set);
+//};
 
-void ChpromptCommand::execute() {
-    if (name_to_set == "") smash->setName("smash");
-    else smash->setName(name_to_set);
-};
-
-ChangeDirCommand::ChangeDirCommand(const char* cmd_line, char** plastPwd) : set_dir(plastPwd), BuiltInCommand(cmd_line) {};
+ChangeDirCommand::ChangeDirCommand(const char* cmd_line, char** plastPwd) : BuiltInCommand(cmd_line), set_dir(plastPwd) {};
 void ChangeDirCommand::execute() {
-    if (set_dir[1] == "-" && set_dir[2] == nullptr) {
-        if (smash.last_pwd) {
-            chdir(smash.last_pwd);
-            smash.last_pwd = nullptr;
-        }
-        else {
-            perror("smash error: cd: OLDPWD not set");
-        }
+    if (string(set_dir[1]) == "-" && set_dir[2] == nullptr) {
+//        if (smash.last_pwd) { // TODO in // for dubugging SH
+//            chdir(smash.last_pwd);
+//            smash.last_pwd = nullptr;
+//        }
+//        else {
+//            perror("smash error: cd: OLDPWD not set");
+//        }
     }
 
-    char* tmp = getcwd(tmp, sizeof(tmp));
+    char tmp [COMMAND_ARGS_MAX_LENGTH];
+    getcwd(tmp, sizeof(tmp));
     if (chdir(set_dir[1]) == 0) { // success
-        smash.last_pwd = tmp;
+//        smash.last_pwd = tmp; // TODO in // for dubugging SH
     }
     else { // error
         perror("smash error: cd: too many arguments");
@@ -149,18 +151,16 @@ void GetCurrDirCommand::execute() {
 
  /// --------------------------- smash V, Command ^ ---------------------------
 
-SmallShell::SmallShell() {
+SmallShell::SmallShell() : name("smash"){
 // TODO: add your implementation
 }
 
-SmallShell::~SmallShell() {
-// TODO: add your implementation
-}
+SmallShell::~SmallShell() {};
 
 /**
 * Creates and returns a pointer to Command class which matches the given command line (cmd_line)
 */
-Command * SmallShell::CreateCommand(const char* cmd_line) {
+Command* SmallShell::CreateCommand(const char *cmd_line) {
 	// For example:
 /*
   string cmd_s = string(cmd_line);
@@ -208,7 +208,6 @@ Command * SmallShell::CreateCommand(const char* cmd_line) {
     }
 
     return nullptr; // TODO should not reach here SH
-
 }
 
 void SmallShell::executeCommand(const char *cmd_line) {
@@ -218,7 +217,7 @@ void SmallShell::executeCommand(const char *cmd_line) {
   // cmd->execute();
   // Please note that you must fork smash process for some commands (e.g., external commands....)
 
-  Command* command = createCommand(cmd_line);
+  Command* command = SmallShell::CreateCommand(cmd_line);
   if (!command) {
       return;
   }
@@ -271,7 +270,7 @@ void JobsList::JobEntry::setStatus(Status new_status) {
 JobsList::JobsList(): jobs(), max_id(0){};
 
 void JobsList::addJob(Command* cmd, Status status){
-  removeFinishedJobs();
+//  removeFinishedJobs(); // TODO in // for dubugging SH
   max_id+=1;
   jobs.push_back(JobEntry(cmd, time(0), status,  max_id));
   //TODO: check if needed
