@@ -198,16 +198,14 @@ Command * SmallShell::CreateCommand(const char* cmd_line) {
 
     }
     else if (cmd_s == "showpid") {
-
+      return new ShowPidCommand(cmd_line);
     }
     else if (cmd_s == "pwd") {
-        return new GetCurrDirCommand(cmd_line);
+      return new GetCurrDirCommand(cmd_line);
     }
     else if (cmd_s == "cd") {
-        return new ChangeDirCommand(cmd_line, args);
+      return new ChangeDirCommand(cmd_line, args);
     }
-
-
 
     return nullptr; // TODO should not reach here SH
 
@@ -238,3 +236,44 @@ void SmallShell::setName(string to_set) {
     name = to_set;
 }
 
+
+/**
+ * this section is the implantation of JobEntry class
+ */
+JobsList::JobEntry::JobEntry(Command* command, time_t time, Status status, int id) : start_time(time), status(status), id(id) {
+  command = command;
+}
+
+pid_t JobsList::JobEntry::getPid() {
+  return id;
+}
+
+Command* JobsList::JobEntry::getCommand() {
+  return command;
+}
+
+time_t JobsList::JobEntry::getStartTime() {
+  return start_time;
+}
+
+Status JobsList::JobEntry::getStatus() {
+  return status;
+}
+
+void JobsList::JobEntry::setStatus(Status new_status) {
+  status = new_status;
+}
+
+
+/**
+ * this section is the implantation of JobsList class
+ */
+JobsList::JobsList(): jobs(), max_id(0){};
+
+void JobsList::addJob(Command* cmd, Status status){
+  removeFinishedJobs();
+  max_id+=1;
+  jobs.push_back(JobEntry(cmd, time(0), status,  max_id));
+  //TODO: check if needed
+  //cmd->setJobID(max_job_id);
+}

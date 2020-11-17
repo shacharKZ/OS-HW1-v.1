@@ -3,9 +3,15 @@
 
 #include <vector>
 
+using namespace std;
+
 #define COMMAND_ARGS_MAX_LENGTH (200)
 #define COMMAND_MAX_ARGS (20)
 #define HISTORY_MAX_RECORDS (50)
+
+enum Status{STOPPED, RUNNING};
+
+
 
 
 
@@ -116,15 +122,36 @@ class HistoryCommand : public BuiltInCommand {
 };
 
 class JobsList {
+
  public:
+
   class JobEntry {
-   // TODO: Add your data members
+  private:
+      // TODO: Add your data members
+      Command* command;
+      time_t start_time;
+      Status status;
+      int id;
+  public:
+      JobEntry(Command* command, time_t time, Status status, int id);
+      JobEntry () =  delete;
+      JobEntry(JobEntry&) = delete ;
+      pid_t getPid();
+      time_t getStartTime();
+      Status getStatus();
+      Command* getCommand();
+      void setStatus(Status);
   };
- // TODO: Add your data members
+
+private:
+    vector<JobEntry> jobs;
+    int max_id;
+
  public:
   JobsList();
-  ~JobsList();
-  void addJob(Command* cmd, bool isStopped = false);
+  ~JobsList() = default;
+  void addJob(Command* cmd, Status status );
+  //TODO continue from here - ofir
   void printJobsList();
   void killAllJobs();
   void removeFinishedJobs();
