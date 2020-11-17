@@ -6,7 +6,9 @@
 #include <sys/wait.h> // TODO
 #include <iomanip>
 #include "Commands.h"
+#include <assert.h>
 
+extern SmallShell& smash;
 using namespace std;
 
 const std::string WHITESPACE = " \n\r\t\f\v";
@@ -111,10 +113,36 @@ void ChpromptCommand::execute() {
     else smash->setName(name_to_set);
 };
 
+ChangeDirCommand::ChangeDirCommand(const char* cmd_line, char** plastPwd) : set_dir(plastPwd), BuiltInCommand(cmd_line) {};
+void ChangeDirCommand::execute() {
+    if (set_dir[1] == "-" && set_dir[2] == nullptr) {
+        if (smash.last_pwd) {
+            chdir(smash.last_pwd);
+            smash.last_pwd = nullptr;
+        }
+        else {
+            perror("smash error: cd: OLDPWD not set");
+        }
+    }
+
+    char* tmp = getcwd(tmp, sizeof(tmp));
+    if (chdir(set_dir[1]) == 0) { // success
+        smash.last_pwd = tmp;
+    }
+    else { // error
+        perror("smash error: cd: too many arguments");
+    }
+}
 
 
-
-
+GetCurrDirCommand::GetCurrDirCommand(const char* cmd_line) : BuiltInCommand(cmd_line) {};
+void GetCurrDirCommand::execute() {
+    char dir[COMMAND_ARGS_MAX_LENGTH];
+    if (getcwd(dir, sizeof(dir))) {
+        std::cout << string(dir) << std::endl;
+    }
+    else assert(0); // should not get here SH
+}
 
 
 
@@ -168,6 +196,15 @@ Command * SmallShell::CreateCommand(const char* cmd_line) {
     }
     else if (cmd_s == "ls") {
 
+    }
+    else if (cmd_s == "showpid") {
+
+    }
+    else if (cmd_s == "pwd") {
+        return new GetCurrDirCommand(cmd_line);
+    }
+    else if (cmd_s == "cd") {
+        return new ChangeDirCommand(cmd_line, args);
     }
 
 
