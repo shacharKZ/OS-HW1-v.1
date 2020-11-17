@@ -146,7 +146,15 @@ Command * SmallShell::CreateCommand(const char* cmd_line) {
         string name_to_set;
         if (args_num>1) name_to_set = string(args[1]);
         else name_to_set = "";
+        name = name_to_set;
+        return nullptr;
+
+        /*
+        string name_to_set;
+        if (args_num>1) name_to_set = string(args[1]);
+        else name_to_set = "";
         return new ChpromptCommand(this, name_to_set, cmd_line);
+         */
     }
     else if (cmd_s == "ls") {
 
@@ -165,12 +173,12 @@ void SmallShell::executeCommand(const char *cmd_line) {
   // cmd->execute();
   // Please note that you must fork smash process for some commands (e.g., external commands....)
 
-  Command* cmd = createCommand(cmd_line);
-  if (!cmd) {
+  Command* command = createCommand(cmd_line);
+  if (!command) {
       return;
   }
-  cmd->execute();
-  delete(cmd);
+  command->execute();
+  delete(command);
 
 
 }
