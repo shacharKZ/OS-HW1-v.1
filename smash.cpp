@@ -5,6 +5,8 @@
 #include "Commands.h"
 #include "signals.h"
 
+SmallShell& smash = SmallShell::getInstance(); // TODO trick to be check in future SH
+
 int main(int argc, char* argv[]) {
     if(signal(SIGTSTP , ctrlZHandler)==SIG_ERR) { // TODO
         perror("smash error: failed to set ctrl-Z handler");
@@ -15,7 +17,7 @@ int main(int argc, char* argv[]) {
 
     //TODO: setup sig alarm handler
 
-    SmallShell& smash = SmallShell::getInstance();
+
     while(true) {
         std::cout << smash.getName() << "> "; // TODO: change this (why?)
         std::string cmd_line;

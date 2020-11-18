@@ -3,7 +3,7 @@
 #include <iostream>
 #include <vector>
 #include <sstream>
-#include <sys/wait.h> // TODO
+#include <sys/wait.h>
 #include <iomanip>
 #include "Commands.h"
 #include <assert.h>
@@ -116,24 +116,27 @@ void ShowPidCommand::execute() {
 
 ChangeDirCommand::ChangeDirCommand(const char* cmd_line, char** plastPwd) : BuiltInCommand(cmd_line), set_dir(plastPwd) {};
 void ChangeDirCommand::execute() {
-    if (string(set_dir[1]) == "-" && set_dir[2] == nullptr) {
-//        if (smash.last_pwd) { // TODO in // for dubugging SH
-//            chdir(smash.last_pwd);
-//            smash.last_pwd = nullptr;
-//        }
-//        else {
-//            perror("smash error: cd: OLDPWD not set");
-//        }
+    if (!set_dir || !set_dir[1]) perror("smash error: cd: too many arguments <>");
+    else if (string(set_dir[1]) == "-" && set_dir[2] == nullptr) {
+        if (smash.last_pwd) {
+//            if (chdir(smash.last_pwd[0]) == 0) smash.last_pwd = ???; // TODO SH
+//            else perror("");
+        }
+        else {
+            perror("smash error: cd: OLDPWD not set");
+        }
+    }
+    else {
+        char tmp [COMMAND_ARGS_MAX_LENGTH];
+        getcwd(tmp, sizeof(tmp));
+        if (chdir(set_dir[1]) == 0) { // success
+//            smash.last_pwd = tmp;  // TODO SH
+        }
+        else { // error
+            perror("smash error: cd: too many arguments");
+        }
     }
 
-    char tmp [COMMAND_ARGS_MAX_LENGTH];
-    getcwd(tmp, sizeof(tmp));
-    if (chdir(set_dir[1]) == 0) { // success
-//        smash.last_pwd = tmp; // TODO in // for dubugging SH
-    }
-    else { // error
-        perror("smash error: cd: too many arguments");
-    }
 }
 
 
@@ -183,11 +186,11 @@ Command* SmallShell::CreateCommand(const char *cmd_line) {
     if (cmd_s == "chprompt") {
         string name_to_set;
         if (args_num>1) name_to_set = string(args[1]);
-        else name_to_set = "";
+        else name_to_set = "smash";
         name = name_to_set;
         return nullptr;
 
-        /*
+        /* // i find this VV useless so the func is ^^ SH
         string name_to_set;
         if (args_num>1) name_to_set = string(args[1]);
         else name_to_set = "";

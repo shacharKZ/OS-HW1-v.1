@@ -217,7 +217,7 @@ class SmallShell {
   void executeCommand(const char* cmd_line);
   // TODO: add extra methods as needed
   std::string getName();
-  char* last_pwd;
+  char* last_pwd [COMMAND_ARGS_MAX_LENGTH];
   void setName(std::string set_name);
   Command* createCommand(const char *cmd_line);
 };
