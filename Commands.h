@@ -216,8 +216,8 @@ class SmallShell {
   ~SmallShell(); // TODO probably future valgrind problems.... SH
   void executeCommand(const char* cmd_line);
   // TODO: add extra methods as needed
-  std::string getName();
-  char* last_pwd [COMMAND_ARGS_MAX_LENGTH];
+  string getName();
+  string last_pwd;
   void setName(std::string set_name);
   Command* createCommand(const char *cmd_line);
 };

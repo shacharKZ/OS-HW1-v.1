@@ -116,27 +116,36 @@ void ShowPidCommand::execute() {
 
 ChangeDirCommand::ChangeDirCommand(const char* cmd_line, char** plastPwd) : BuiltInCommand(cmd_line), set_dir(plastPwd) {};
 void ChangeDirCommand::execute() {
-    if (!set_dir || !set_dir[1]) perror("smash error: cd: too many arguments <>");
-    else if (string(set_dir[1]) == "-" && set_dir[2] == nullptr) {
-        if (smash.last_pwd) {
-//            if (chdir(smash.last_pwd[0]) == 0) smash.last_pwd = ???; // TODO SH
-//            else perror("");
+    if (!set_dir || !set_dir[1] || set_dir[2]) {
+        perror("smash error: cd: too many arguments");
+        return;
+    }
+    char tmp [COMMAND_ARGS_MAX_LENGTH];
+    if (!getcwd(tmp, sizeof(tmp))) {
+        perror("");
+        return;
+    }
+    if (string(set_dir[1]) == "-") {
+        if (smash.last_pwd != "") {
+            if (chdir(smash.last_pwd.c_str()) == 0) {
+                smash.last_pwd = string(tmp);
+            }
+            else {
+                perror(""); // fail of chdir
+            }
         }
         else {
             perror("smash error: cd: OLDPWD not set");
         }
     }
     else {
-        char tmp [COMMAND_ARGS_MAX_LENGTH];
-        getcwd(tmp, sizeof(tmp));
-        if (chdir(set_dir[1]) == 0) { // success
-//            smash.last_pwd = tmp;  // TODO SH
+        if (chdir(set_dir[1]) == 0) {
+            smash.last_pwd = string(tmp);;
         }
-        else { // error
-            perror("smash error: cd: too many arguments");
+        else {
+            perror(""); // fail of chdir
         }
     }
-
 }
 
 
@@ -154,7 +163,7 @@ void GetCurrDirCommand::execute() {
 
  /// --------------------------- smash V, Command ^ ---------------------------
 
-SmallShell::SmallShell() : name("smash"){
+SmallShell::SmallShell() : name("smash"), last_pwd("/home"){
 // TODO: add your implementation
 }
 
