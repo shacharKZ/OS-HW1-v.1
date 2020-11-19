@@ -180,14 +180,14 @@ void ExternalCommand::execute() {
             exit(0);
         }
 
+//        int tmp = execv("/bin/bash", proc_args);
+//        if (tmp == -1) {
+//            perror("");
+//            exit(0);
+//        }
     }
     else { // father. original proc
 //        smash.job_list.append()
-        char *proc_args[] = {"/bin/bash", "-c" , (char *)(cmd_line), NULL};
-        if (execv("/bin/bash", proc_args) == -1) {
-            perror("");
-            exit(0);
-        }
         if (is_bg) {
             cout<< "bg command... do something" << endl;
             // TODO do something
@@ -282,6 +282,7 @@ void SmallShell::executeCommand(const char *cmd_line) {
       return;
   }
   command->execute();
+
   delete(command);
 
 
