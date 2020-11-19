@@ -103,9 +103,6 @@ void ShowPidCommand::execute() {
 };
 
 
-
-
-
 //ChpromptCommand::ChpromptCommand(SmallShell* smash, string set_name, const char* cmd_line) :
 //        smash(smash), name_to_set(set_name), BuiltInCommand(cmd_line) {};
 //
@@ -114,24 +111,27 @@ void ShowPidCommand::execute() {
 //    else smash->setName(name_to_set);
 //};
 
-ChangeDirCommand::ChangeDirCommand(const char* cmd_line, char** plastPwd) : BuiltInCommand(cmd_line), set_dir(plastPwd) {};
+ChangeDirCommand::ChangeDirCommand(const char* cmd_line, char** plastPwd) : set_dir(plastPwd), BuiltInCommand(cmd_line) {};
+
 void ChangeDirCommand::execute() {
     if (!set_dir || !set_dir[1] || set_dir[2]) {
         perror("smash error: cd: too many arguments");
         return;
     }
-    char tmp [COMMAND_ARGS_MAX_LENGTH];
-    if (!getcwd(tmp, sizeof(tmp))) {
+
+    char dir[COMMAND_ARGS_MAX_LENGTH];
+    if (!getcwd(dir, sizeof(dir))) {
         perror("");
         return;
     }
-    if (string(set_dir[1]) == "-") {
+
+    if (set_dir[1] == "-") { // TODO
         if (smash.last_pwd != "") {
             if (chdir(smash.last_pwd.c_str()) == 0) {
-                smash.last_pwd = string(tmp);
+                smash.last_pwd = string(dir);
             }
             else {
-                perror(""); // fail of chdir
+                perror("");
             }
         }
         else {
@@ -139,13 +139,15 @@ void ChangeDirCommand::execute() {
         }
     }
     else {
-        if (chdir(set_dir[1]) == 0) {
-            smash.last_pwd = string(tmp);;
+        if (chdir(set_dir[1]) == 0) { // TODO
+//            cout << string(set_dir[1]) << endl;
+            smash.last_pwd = string(dir);
         }
         else {
-            perror(""); // fail of chdir
+            perror("");
         }
     }
+
 }
 
 
@@ -155,7 +157,7 @@ void GetCurrDirCommand::execute() {
     if (getcwd(dir, sizeof(dir))) {
         std::cout << string(dir) << std::endl;
     }
-    else assert(0); // should not get here SH
+    else perror(""); // should not get here SH
 }
 
 
