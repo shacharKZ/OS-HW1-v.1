@@ -187,7 +187,7 @@ void ExternalCommand::execute() {
 //        }
     }
     else { // father. original proc
-        smash.jb.addJob(*this, RUNNING, getpid());
+        smash.jb.addJob(*this, RUNNING, pid);
         if (is_bg) {
             cout<< "bg command... do something" << endl;
             // TODO do something
@@ -346,7 +346,7 @@ JobsList::JobsList(): max_id(0), jobs(){
 };
 
 void JobsList::addJob(Command& cmd, Status status, pid_t pid){
-//  removeFinishedJobs(); // TODO in // for dubugging SH
+  removeFinishedJobs();
   max_id+=1;
   jobs.push_back(JobEntry(cmd, time(0), status,  max_id, pid));
   //TODO: check if needed
@@ -356,9 +356,10 @@ void JobsList::addJob(Command& cmd, Status status, pid_t pid){
 void JobsList::removeFinishedJobs(){
   int current_max = 0;
   int result;
+  int status;
   vector <JobEntry> :: iterator job = jobs.begin();
   while (job != jobs.end()){
-    result = waitpid(job->getId(), NULL, WNOHANG);
+    result = waitpid(job->getPid(), &status, WNOHANG);
     assert(result >= 0);
     if (result == 0) {
       if(job->getId() > current_max) {
@@ -375,7 +376,8 @@ void JobsList::removeFinishedJobs(){
 
 
 void JobsList:: printJobsList(){
+  removeFinishedJobs();
   for(vector <JobEntry> :: iterator job = jobs.begin(); job != jobs.end(); ++job){
-    cout << "[" << job->getPid()<< "] " << job->getCmd() << " : " << job->getId() << " " << difftime(time(0), job->getStartTime()) << endl;
+    cout << "[" << job->getId()<< "] " << job->getCmd() << " : " << job->getId() << " " << difftime(time(0), job->getStartTime()) << endl;
   }
 }

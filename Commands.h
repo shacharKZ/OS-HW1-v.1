@@ -154,12 +154,12 @@ public:
     JobsList();
     ~JobsList() = default;
     void addJob(Command&, Status, pid_t);
-    //TODO continue from here - ofir
     void printJobsList();
-    void killAllJobs();
     void removeFinishedJobs();
     JobEntry * getJobById(int jobId);
+    //TODO continue from here - ofir
     void removeJobById(int jobId);
+    void killAllJobs();
     JobEntry * getLastJob(int* lastJobId);
     JobEntry *getLastStoppedJob(int *jobId);
     // TODO: Add extra methods or modify exisitng ones as needed
