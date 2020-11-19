@@ -203,6 +203,17 @@ void ExternalCommand::execute() {
 }
 
 
+KillCommand::KillCommand(const char* cmd_line, JobsList* jobs) : jobs(jobs), BuiltInCommand(cmd_line) {};
+
+void KillCommand::execute() {
+//    string s_tmp = string(cmd_line);
+//    s_tmp = s_tmp.erase(s_tmp.find_first_of("kill"), s_tmp.find_first_of("kill") + 4);
+//    s_tmp = _ltrim(s_tmp);
+//    if (s_tmp)
+//    if (!cmd_line[5] || cmd_line[2][0] != "-") // TODO
+
+}
+
 
 
 
@@ -262,6 +273,15 @@ Command* SmallShell::CreateCommand(const char *cmd_line) {
     }
     else if (cmd_s == "cd") {
       return new ChangeDirCommand(cmd_line, args);
+    }
+    else if (cmd_s == "kill") {
+        if (args_num != 3) {
+            cerr << "smash error: kill: invalid arguments" << endl;
+        }
+        else {
+            return new KillCommand(cmd_line, &smash.jb);
+        }
+
     }
     else if (cmd_s == "jobs") {
         jb.printJobsList();
