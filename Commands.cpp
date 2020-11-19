@@ -187,7 +187,7 @@ void ExternalCommand::execute() {
 //        }
     }
     else { // father. original proc
-        smash.jb->addJob(*this, RUNNING, getpid());
+        smash.jb.addJob(*this, RUNNING, getpid());
         if (is_bg) {
             cout<< "bg command... do something" << endl;
             // TODO do something
@@ -208,7 +208,7 @@ void ExternalCommand::execute() {
 
  /// --------------------------- smash V, Command ^ ---------------------------
 
-SmallShell::SmallShell() : name("smash"), last_pwd(""){
+SmallShell::SmallShell() : name("smash"), last_pwd(""), jb(){
 // TODO: add your implementation
 }
 
@@ -262,6 +262,9 @@ Command* SmallShell::CreateCommand(const char *cmd_line) {
     }
     else if (cmd_s == "cd") {
       return new ChangeDirCommand(cmd_line, args);
+    }
+    else if (cmd_s == "jobs") {
+        jb.printJobsList();
     }
     else {
         return new ExternalCommand(cmd_line);
@@ -373,6 +376,6 @@ void JobsList::removeFinishedJobs(){
 
 void JobsList:: printJobsList(){
   for(vector <JobEntry> :: iterator job = jobs.begin(); job != jobs.end(); ++job){
-    cout << "[" << job->getPid()<< "] " << job->getCmd() << " : " << job->getId() << " " << difftime(time(0), job->getStartTime());
+    cout << "[" << job->getPid()<< "] " << job->getCmd() << " : " << job->getId() << " " << difftime(time(0), job->getStartTime()) << endl;
   }
 }

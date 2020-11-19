@@ -220,7 +220,7 @@ class SmallShell {
   void executeCommand(const char* cmd_line);
   // TODO: add extra methods as needed
   string getName();
-  JobsList* jb;
+  JobsList jb;
   string last_pwd;
   void setName(std::string set_name);
   Command* createCommand(const char *cmd_line);
