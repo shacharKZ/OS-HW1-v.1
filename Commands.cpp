@@ -346,10 +346,10 @@ JobsList::JobsList(): max_id(0), jobs(){
 };
 
 void JobsList::addJob(Command& cmd, Status status, pid_t pid){
-  removeFinishedJobs();
   max_id+=1;
   jobs.push_back(JobEntry(cmd, time(0), status,  max_id, pid));
   //TODO: check if needed
+  //cmd->setJobID(max_job_id);
   //cmd->setJobID(max_job_id);
 }
 
@@ -357,26 +357,30 @@ void JobsList::removeFinishedJobs(){
   int current_max = 0;
   int result;
   int status;
+  vector<JobEntry> new_jobs;
+
   vector <JobEntry> :: iterator job = jobs.begin();
-  while (job != jobs.end()){
-    result = waitpid(job->getPid(), &status, WNOHANG);
-    assert(result >= 0);
-    if (result == 0) {
-      if(job->getId() > current_max) {
-        current_max = job->getId();
-        ++job;
-      }
-    }// not finished yet
-    else{
-      jobs.erase(job);
+
+
+  for(auto& job: jobs){
+    result = waitpid(job.getPid(), &status, WNOHANG);
+    if (result < 0){
+      // TODO : delete this shit
+      cout << "result weird " << job.getId() << endl;
     }
+    if (result == 0) {
+      if(job.getId() > current_max)
+        current_max = job.getId();
+      new_jobs.push_back(JobEntry(job));
+
+    }// not finished yet
   }
+  jobs = new_jobs;
   max_id = current_max;
 }
 
 
 void JobsList:: printJobsList(){
-  removeFinishedJobs();
   for(vector <JobEntry> :: iterator job = jobs.begin(); job != jobs.end(); ++job){
     cout << "[" << job->getId()<< "] " << job->getCmd() << " : " << job->getId() << " " << difftime(time(0), job->getStartTime()) << endl;
   }

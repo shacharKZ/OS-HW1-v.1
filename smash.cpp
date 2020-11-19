@@ -22,6 +22,7 @@ int main(int argc, char* argv[]) {
         std::cout << smash.getName() << "> "; // TODO: change this (why?)
         std::string cmd_line;
         std::getline(std::cin, cmd_line);
+        smash.jb.removeFinishedJobs();
         smash.executeCommand(cmd_line.c_str());
     }
     return 0;
