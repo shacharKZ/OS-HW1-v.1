@@ -127,18 +127,21 @@ class JobsList {
   class JobEntry {
   private:
       // TODO: Add your data members
-      Command* command;
+      pid_t pid;
       time_t start_time;
       Status status;
       int id;
+      string cmd_line;
   public:
-      JobEntry(Command* command, time_t time, Status status, int id);
+      JobEntry(Command&, time_t, Status, int id, int pid);
+      JobEntry(const char*, time_t, Status, int id, int pid);
       JobEntry () = default;
 //      JobEntry(JobEntry&) = delete ; // TODO in // for dibugging SH
       pid_t getPid();
       time_t getStartTime();
       Status getStatus();
-      Command* getCommand();
+      int getId ();
+      string getCmd ();
       void setStatus(Status);
   };
 
@@ -150,7 +153,7 @@ private:
  public:
   JobsList();
   ~JobsList() = default;
-  void addJob(Command* cmd, Status status );
+  void addJob(Command&, Status, pid_t);
   //TODO continue from here - ofir
   void printJobsList();
   void killAllJobs();
