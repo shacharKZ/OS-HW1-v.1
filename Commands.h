@@ -123,47 +123,48 @@ class HistoryCommand : public BuiltInCommand {
 };
 
 class JobsList {
- public:
-  class JobEntry {
-  private:
-      // TODO: Add your data members
-      pid_t pid;
-      time_t start_time;
-      Status status;
-      int id;
-      string cmd_line;
-  public:
-      JobEntry(Command&, time_t, Status, int id, int pid);
-      JobEntry(const char*, time_t, Status, int id, int pid);
-      JobEntry () = default;
+public:
+    class JobEntry {
+    private:
+        // TODO: Add your data members
+        pid_t pid;
+        time_t start_time;
+        Status status;
+        int id;
+        string cmd_line;
+    public:
+        JobEntry(Command&, time_t, Status, int id, int pid);
+        JobEntry(const char*, time_t, Status, int id, int pid);
+        JobEntry () = delete;
 //      JobEntry(JobEntry&) = delete ; // TODO in // for dibugging SH
-      pid_t getPid();
-      time_t getStartTime();
-      Status getStatus();
-      int getId ();
-      string getCmd ();
-      void setStatus(Status);
-  };
+        pid_t getPid();
+        time_t getStartTime();
+        Status getStatus();
+        int getId ();
+        string getCmd ();
+        void setStatus(Status);
+    };
 
 private:
     vector<JobEntry> jobs;
     int max_id;
     int last_stooped;
 
- public:
-  JobsList();
-  ~JobsList() = default;
-  void addJob(Command&, Status, pid_t);
-  //TODO continue from here - ofir
-  void printJobsList();
-  void killAllJobs();
-  void removeFinishedJobs();
-  JobEntry * getJobById(int jobId);
-  void removeJobById(int jobId);
-  JobEntry * getLastJob(int* lastJobId);
-  JobEntry *getLastStoppedJob(int *jobId);
-  // TODO: Add extra methods or modify exisitng ones as needed
+public:
+    JobsList();
+    ~JobsList() = default;
+    void addJob(Command&, Status, pid_t);
+    //TODO continue from here - ofir
+    void printJobsList();
+    void killAllJobs();
+    void removeFinishedJobs();
+    JobEntry * getJobById(int jobId);
+    void removeJobById(int jobId);
+    JobEntry * getLastJob(int* lastJobId);
+    JobEntry *getLastStoppedJob(int *jobId);
+    // TODO: Add extra methods or modify exisitng ones as needed
 };
+
 
 class JobsCommand : public BuiltInCommand {
  // TODO: Add your data members
