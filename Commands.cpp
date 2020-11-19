@@ -162,6 +162,50 @@ void GetCurrDirCommand::execute() {
 
 
 
+ExternalCommand::ExternalCommand(const char* cmd_line) : Command(cmd_line) {};
+
+void ExternalCommand::execute() {
+
+    bool is_bg = _isBackgroundComamnd(cmd_line);
+
+    pid_t pid = fork();
+    if (pid == -1) {
+        perror(""); // or cout << "smash.... fork fail..."...
+    }
+    else if (pid == 0) {// the new forked proc
+        // TODO mybe
+        char *proc_args[] = {"/bin/bash", "-c" , (char *)cmd_line, NULL};
+        if (execv("/bin/bash", proc_args) == -1) {
+            perror("");
+            exit(0);
+        }
+
+    }
+    else { // father. original proc
+//        smash.job_list.append()
+        char *proc_args[] = {"/bin/bash", "-c" , (char *)(cmd_line), NULL};
+        if (execv("/bin/bash", proc_args) == -1) {
+            perror("");
+            exit(0);
+        }
+        if (is_bg) {
+            cout<< "bg command... do something" << endl;
+            // TODO do something
+        }
+        else {
+            if (waitpid(pid,NULL,WUNTRACED) == -1) {
+                perror("");
+            }
+        }
+        // TODO
+    }
+
+}
+
+
+
+
+
  /// --------------------------- smash V, Command ^ ---------------------------
 
 SmallShell::SmallShell() : name("smash"), last_pwd(""){
@@ -218,6 +262,9 @@ Command* SmallShell::CreateCommand(const char *cmd_line) {
     }
     else if (cmd_s == "cd") {
       return new ChangeDirCommand(cmd_line, args);
+    }
+    else {
+        return new ExternalCommand(cmd_line);
     }
 
     return nullptr; // TODO should not reach here SH
