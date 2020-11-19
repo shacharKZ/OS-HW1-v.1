@@ -252,24 +252,34 @@ void SmallShell::setName(string to_set) {
 /**
  * this section is the implantation of JobEntry class
  */
-JobsList::JobEntry::JobEntry(Command* command, time_t time, Status status, int id) : start_time(time), status(status), id(id) {
-  command = command;
-}
+JobsList::JobEntry::JobEntry(Command& command, time_t time, Status status, int id, int pid)
+: cmd_line(command.getCmd()), start_time(time), status(status), id(id), pid(pid) {}
+
+
+
+JobsList::JobEntry::JobEntry(const char* cmd_line, time_t time, Status status, int id, int pid)
+: cmd_line(cmd_line), start_time(time), status(status), id(id), pid(pid) {}
+
 
 pid_t JobsList::JobEntry::getPid() {
+  return pid;
+}
+
+int JobsList::JobEntry::getId(){
   return id;
 }
 
-Command* JobsList::JobEntry::getCommand() {
-  return command;
-}
-
-time_t JobsList::JobEntry::getStartTime() {
+time_t JobsList::JobEntry::getStartTime(){
   return start_time;
 }
 
 Status JobsList::JobEntry::getStatus() {
   return status;
+}
+
+
+string JobsList::JobEntry::getCmd(){
+  return cmd_line;
 }
 
 void JobsList::JobEntry::setStatus(Status new_status) {
@@ -284,20 +294,29 @@ JobsList::JobsList(): max_id(0), jobs(){
   last_stooped = -1;
 };
 
-void JobsList::addJob(Command* cmd, Status status){
+void JobsList::addJob(Command& cmd, Status status, pid_t pid){
 //  removeFinishedJobs(); // TODO in // for dubugging SH
   max_id+=1;
-  jobs.push_back(JobEntry(cmd, time(0), status,  max_id));
+  jobs.push_back(JobEntry(cmd, time(0), status,  max_id, pid));
   //TODO: check if needed
   //cmd->setJobID(max_job_id);
 }
 
+void JobsList::removeFinishedJobs(){
+  int current_max = 0;
+  for(vector <JobEntry> :: iterator job = jobs.begin(); job != jobs.end(); ++job){
+    cout << "[" << job->getPid()<< "] " << job->getCmd() << " : " << job->getId() << " " << difftime(time(0), job->getStartTime());
+  }
+}
+  jobs.push_back(JobEntry(cmd, time(0), status,  max_id, pid));
+  //TODO: check if needed
+  //cmd->setJobID(max_job_id);
+}
+
+
 void JobsList:: printJobsList(){
   for(vector <JobEntry> :: iterator job = jobs.begin(); job != jobs.end(); ++job){
-    const char*  line= job->getCommand()->getCmd();
-    pid_t pid = job->getPid();
-
-    cout << "[" << pid<< "]" <<  << ;
+    cout << "[" << job->getPid()<< "] " << job->getCmd() << " : " << job->getId() << " " << difftime(time(0), job->getStartTime());
   }
 }
 
