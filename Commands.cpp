@@ -162,6 +162,50 @@ void GetCurrDirCommand::execute() {
 
 
 
+ExternalCommand::ExternalCommand(const char* cmd_line) : Command(cmd_line) {};
+
+void ExternalCommand::execute() {
+
+    bool is_bg = _isBackgroundComamnd(cmd_line);
+
+    pid_t pid = fork();
+    if (pid == -1) {
+        perror(""); // or cout << "smash.... fork fail..."...
+    }
+    else if (pid == 0) {// the new forked proc
+        // TODO mybe
+        char *proc_args[] = {"/bin/bash", "-c" , (char *)cmd_line, NULL};
+        if (execv("/bin/bash", proc_args) == -1) {
+            perror("");
+            exit(0);
+        }
+
+    }
+    else { // father. original proc
+//        smash.job_list.append()
+        char *proc_args[] = {"/bin/bash", "-c" , (char *)(cmd_line), NULL};
+        if (execv("/bin/bash", proc_args) == -1) {
+            perror("");
+            exit(0);
+        }
+        if (is_bg) {
+            cout<< "bg command... do something" << endl;
+            // TODO do something
+        }
+        else {
+            if (waitpid(pid,NULL,WUNTRACED) == -1) {
+                perror("");
+            }
+        }
+        // TODO
+    }
+
+}
+
+
+
+
+
  /// --------------------------- smash V, Command ^ ---------------------------
 
 SmallShell::SmallShell() : name("smash"), last_pwd(""){
@@ -219,6 +263,9 @@ Command* SmallShell::CreateCommand(const char *cmd_line) {
     else if (cmd_s == "cd") {
       return new ChangeDirCommand(cmd_line, args);
     }
+    else {
+        return new ExternalCommand(cmd_line);
+    }
 
     return nullptr; // TODO should not reach here SH
 }
@@ -252,34 +299,24 @@ void SmallShell::setName(string to_set) {
 /**
  * this section is the implantation of JobEntry class
  */
-JobsList::JobEntry::JobEntry(Command& command, time_t time, Status status, int id, int pid)
-: cmd_line(command.getCmd()), start_time(time), status(status), id(id), pid(pid) {}
-
-
-
-JobsList::JobEntry::JobEntry(const char* cmd_line, time_t time, Status status, int id, int pid)
-: cmd_line(cmd_line), start_time(time), status(status), id(id), pid(pid) {}
-
-
-pid_t JobsList::JobEntry::getPid() {
-  return pid;
+JobsList::JobEntry::JobEntry(Command* command, time_t time, Status status, int id) : start_time(time), status(status), id(id) {
+  command = command;
 }
 
-int JobsList::JobEntry::getId(){
+pid_t JobsList::JobEntry::getPid() {
   return id;
 }
 
-time_t JobsList::JobEntry::getStartTime(){
+Command* JobsList::JobEntry::getCommand() {
+  return command;
+}
+
+time_t JobsList::JobEntry::getStartTime() {
   return start_time;
 }
 
 Status JobsList::JobEntry::getStatus() {
   return status;
-}
-
-
-string JobsList::JobEntry::getCmd(){
-  return cmd_line;
 }
 
 void JobsList::JobEntry::setStatus(Status new_status) {
@@ -294,25 +331,20 @@ JobsList::JobsList(): max_id(0), jobs(){
   last_stooped = -1;
 };
 
-void JobsList::addJob(Command& cmd, Status status, pid_t pid){
+void JobsList::addJob(Command* cmd, Status status){
 //  removeFinishedJobs(); // TODO in // for dubugging SH
   max_id+=1;
-  jobs.push_back(JobEntry(cmd, time(0), status,  max_id, pid));
+  jobs.push_back(JobEntry(cmd, time(0), status,  max_id));
   //TODO: check if needed
   //cmd->setJobID(max_job_id);
 }
 
-void JobsList::removeFinishedJobs(){
-  int current_max = 0;
-  for(vector <JobEntry> :: iterator job = jobs.begin(); job != jobs.end(); ++job){
-    res =
-  }
-}
-
-
 void JobsList:: printJobsList(){
   for(vector <JobEntry> :: iterator job = jobs.begin(); job != jobs.end(); ++job){
-    cout << "[" << job->getPid()<< "] " << job->getCmd() << " : " << job->getId() << " " << difftime(time(0), job->getStartTime());
+    const char*  line= job->getCommand()->getCmd();
+    pid_t pid = job->getPid();
+
+    cout << "[" << pid<< "]" <<  << ;
   }
 }
 
