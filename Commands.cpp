@@ -85,10 +85,16 @@ void _removeBackgroundSign(char* cmd_line) {
   cmd_line[str.find_last_not_of(WHITESPACE, idx) + 1] = 0;
 }
 
-/// --------------------------- Command V, segel codes ^ ---------------------------
+/// --------------------------- From here down is here our code---------------------------
 // TODO: Add your implementation for classes in Commands.h
 
+// command class
 Command::Command(const char *cmd_line) : cmd_line(cmd_line) {};
+
+const char *Command::getCmd() {
+  return cmd_line;
+}
+
 
 BuiltInCommand::BuiltInCommand(const char *cmd_line) : Command(cmd_line) {};
 
@@ -274,7 +280,9 @@ void JobsList::JobEntry::setStatus(Status new_status) {
 /**
  * this section is the implantation of JobsList class
  */
-JobsList::JobsList(): jobs(), max_id(0){};
+JobsList::JobsList(): max_id(0), jobs(){
+  last_stooped = -1;
+};
 
 void JobsList::addJob(Command* cmd, Status status){
 //  removeFinishedJobs(); // TODO in // for dubugging SH
@@ -283,3 +291,13 @@ void JobsList::addJob(Command* cmd, Status status){
   //TODO: check if needed
   //cmd->setJobID(max_job_id);
 }
+
+void JobsList:: printJobsList(){
+  for(vector <JobEntry> :: iterator job = jobs.begin(); job != jobs.end(); ++job){
+    const char*  line= job->getCommand()->getCmd();
+    pid_t pid = job->getPid();
+
+    cout << "[" << pid<< "]" <<  << ;
+  }
+}
+

@@ -25,6 +25,7 @@ protected:
   Command(const char* cmd_line);
   virtual ~Command() = default;
   virtual void execute() = 0;
+  const char* getCmd();
   //virtual void prepare();
   //virtual void cleanup();
   // TODO: Add your extra methods if needed
@@ -122,9 +123,7 @@ class HistoryCommand : public BuiltInCommand {
 };
 
 class JobsList {
-
  public:
-
   class JobEntry {
   private:
       // TODO: Add your data members
@@ -134,7 +133,7 @@ class JobsList {
       int id;
   public:
       JobEntry(Command* command, time_t time, Status status, int id);
-      JobEntry () =  delete;
+      JobEntry () = default;
 //      JobEntry(JobEntry&) = delete ; // TODO in // for dibugging SH
       pid_t getPid();
       time_t getStartTime();
@@ -146,6 +145,7 @@ class JobsList {
 private:
     vector<JobEntry> jobs;
     int max_id;
+    int last_stooped;
 
  public:
   JobsList();
