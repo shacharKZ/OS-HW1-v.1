@@ -115,39 +115,32 @@ ChangeDirCommand::ChangeDirCommand(const char* cmd_line, char** plastPwd) : set_
 
 void ChangeDirCommand::execute() {
     if (!set_dir || !set_dir[1] || set_dir[2]) {
-        perror("smash error: cd: too many arguments");
+        cerr << "smash error: cd: too many arguments" << endl;
         return;
     }
 
-    char dir[COMMAND_ARGS_MAX_LENGTH];
+    string go_to_adress = string(set_dir[1]); // easier to work with and solves strange bug... SH
+
+    if (go_to_adress == "-") {
+        if (smash.last_pwd == "") {
+            cerr<< "smash error: cd: OLDPWD not set" << endl;
+            return;
+        }
+        go_to_adress = smash.last_pwd;
+    }
+
+    char dir[COMMAND_ARGS_MAX_LENGTH]; // get current pwd to store in smash.last_pwd (OLDPWD)
     if (!getcwd(dir, sizeof(dir))) {
         perror("");
         return;
     }
 
-    if (set_dir[1] == "-") { // TODO
-        if (smash.last_pwd != "") {
-            if (chdir(smash.last_pwd.c_str()) == 0) {
-                smash.last_pwd = string(dir);
-            }
-            else {
-                perror("");
-            }
-        }
-        else {
-            perror("smash error: cd: OLDPWD not set");
-        }
+    if (chdir(go_to_adress.c_str()) == 0) { // in this case 0 symbols success
+        smash.last_pwd = string(dir);
     }
     else {
-        if (chdir(set_dir[1]) == 0) { // TODO
-//            cout << string(set_dir[1]) << endl;
-            smash.last_pwd = string(dir);
-        }
-        else {
-            perror("");
-        }
+        perror("");
     }
-
 }
 
 
@@ -165,7 +158,7 @@ void GetCurrDirCommand::execute() {
 
  /// --------------------------- smash V, Command ^ ---------------------------
 
-SmallShell::SmallShell() : name("smash"), last_pwd("/home"){
+SmallShell::SmallShell() : name("smash"), last_pwd(""){
 // TODO: add your implementation
 }
 
