@@ -205,7 +205,6 @@ class SmallShell {
  private:
   // TODO: Add your data members
   std::string name;
-  JobsList* jb;
   SmallShell();
  public:
   Command *CreateCommand(const char* cmd_line);
@@ -221,6 +220,7 @@ class SmallShell {
   void executeCommand(const char* cmd_line);
   // TODO: add extra methods as needed
   string getName();
+  JobsList* jb;
   string last_pwd;
   void setName(std::string set_name);
   Command* createCommand(const char *cmd_line);

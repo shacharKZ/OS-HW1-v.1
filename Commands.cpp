@@ -187,7 +187,7 @@ void ExternalCommand::execute() {
 //        }
     }
     else { // father. original proc
-//        smash.job_list.append()
+        smash.jb->addJob(*this, RUNNING, getpid());
         if (is_bg) {
             cout<< "bg command... do something" << endl;
             // TODO do something
