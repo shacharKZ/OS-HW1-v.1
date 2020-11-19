@@ -172,24 +172,23 @@ void ExternalCommand::execute() {
     if (pid == -1) {
         perror(""); // or cout << "smash.... fork fail..."...
     }
-    else if (pid == 0) {// the new forked proc
+    else if (pid == 0) {// son. the new forked proc
         // TODO mybe
+        setpgrp(); // TODO HOLLY BUG? SH
+
         char *proc_args[] = {"/bin/bash", "-c" , (char *)cmd_line, NULL};
         if (execv("/bin/bash", proc_args) == -1) {
             perror("");
             exit(0);
         }
 
-//        int tmp = execv("/bin/bash", proc_args);
-//        if (tmp == -1) {
-//            perror("");
-//            exit(0);
-//        }
     }
     else { // father. original proc
         smash.jb.addJob(*this, RUNNING, pid);
+        int tmp_dubging = waitpid(pid, NULL, WNOHANG);
+
         if (is_bg) {
-            cout<< "bg command... do something" << endl;
+            cout<< "BG command was created" << endl;
             // TODO do something
         }
         else {
@@ -199,7 +198,7 @@ void ExternalCommand::execute() {
         }
         // TODO
     }
-
+    cout << pid << endl;
 }
 
 
@@ -279,7 +278,7 @@ Command* SmallShell::CreateCommand(const char *cmd_line) {
             cerr << "smash error: kill: invalid arguments" << endl;
         }
         else {
-            return new KillCommand(cmd_line, &smash.jb);
+            return new KillCommand(cmd_line, &smash.jb); // TODO not implment yet
         }
 
     }
@@ -306,7 +305,7 @@ void SmallShell::executeCommand(const char *cmd_line) {
   }
   command->execute();
 
-  delete(command);
+  delete(command); // TODO ??
 
 
 }
@@ -345,6 +344,8 @@ time_t JobsList::JobEntry::getStartTime(){
 }
 
 Status JobsList::JobEntry::getStatus() {
+//    int st;
+//    int res = waitpid(pid, &st, WNOHANG);
   return status;
 }
 
@@ -373,35 +374,72 @@ void JobsList::addJob(Command& cmd, Status status, pid_t pid){
   //cmd->setJobID(max_job_id);
 }
 
-void JobsList::removeFinishedJobs(){
-  int current_max = 0;
-  int result;
-  int status;
-  vector<JobEntry> new_jobs;
-
-  vector <JobEntry> :: iterator job = jobs.begin();
-
-
-  for(auto& job: jobs){
-    result = waitpid(job.getPid(), &status, WNOHANG);
-    if (result < 0){
-      // TODO : delete this shit
-      cout << "result weird " << job.getId() << endl;
+void JobsList::removeFinishedJobs() {
+    pid_t tmp_pid = 0;
+    while (tmp_pid = waitpid(-1,NULL,WNOHANG) > 0) {
+        auto it = jobs.begin();
+        while (it->getPid() != tmp_pid) {
+            it++;
+        }
+        cout << "erase from jobs proc " << it->getPid() << endl;
+        jobs.erase(it);
     }
-    if (result == 0) {
-      if(job.getId() > current_max)
-        current_max = job.getId();
-      new_jobs.push_back(JobEntry(job));
-
-    }// not finished yet
-  }
-  jobs = new_jobs;
-  max_id = current_max;
 }
+
+//void JobsList::removeFinishedJobs(){
+//
+//    auto it = jobs.begin();
+//    while (it < jobs.end()) {
+//
+//        int status;
+//        pid_t res = waitpid((*it).getPid(), &status, WNOHANG);
+//        if (res > 0) {
+//            cout << "remove proc " << (*it).getPid() << endl;
+//            jobs.erase(it++);
+//        }
+//        else if (res == -1) {
+//            cout << "some error.... " << (*it).getPid() << endl;
+////            perror("");
+//            ++it;
+//        }
+//        else {
+//            cout << "this proc is still running!!!!!! " << (*it).getPid() << endl;
+//            ++it;
+//        }
+//    }
+//}
+
+//void JobsList::removeFinishedJobs(){
+//  int current_max = 0;
+//  int result;
+//  int status;
+//  vector<JobEntry> new_jobs;
+//
+//  vector <JobEntry> :: iterator job = jobs.begin();
+//
+//
+//  for(auto& job: jobs){
+//    result = waitpid(job.getPid(), &status, WNOHANG);
+//    if (result < 0){
+//      // TODO : delete this shit
+//      cout << "result weird " << job.getId() << endl;
+//    }
+//    if (result == 0) {
+//      if(job.getId() > current_max)
+//        current_max = job.getId();
+//      new_jobs.push_back(JobEntry(job));
+//
+//    }// not finished yet
+//  }
+//  jobs = new_jobs;
+//  max_id = current_max;
+//}
 
 
 void JobsList:: printJobsList(){
-  for(vector <JobEntry> :: iterator job = jobs.begin(); job != jobs.end(); ++job){
+  for(auto job = jobs.begin(); job != jobs.end(); ++job){
     cout << "[" << job->getId()<< "] " << job->getCmd() << " : " << job->getId() << " " << difftime(time(0), job->getStartTime()) << endl;
+//    cout << "[" << job->getId()<< "] " << job->getCmd() << " : " << job->getId() << " " << difftime(time(0), job->getStartTime()) << job->getStatus() << endl;
+
   }
 }
