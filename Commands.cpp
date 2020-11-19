@@ -166,15 +166,18 @@ ExternalCommand::ExternalCommand(const char* cmd_line) : Command(cmd_line) {};
 
 void ExternalCommand::execute() {
 
+    assert(waitpid(-1,NULL,WNOHANG)!=1); // TODO help me find the holly bug SH
     bool is_bg = _isBackgroundComamnd(cmd_line);
 
     pid_t pid = fork();
+    assert(waitpid(-1,NULL,WNOHANG)!=1); // TODO help me find the holly bug SH
     if (pid == -1) {
         perror(""); // or cout << "smash.... fork fail..."...
     }
     else if (pid == 0) {// son. the new forked proc
         // TODO mybe
-        setpgrp(); // TODO HOLLY BUG? SH
+        assert(waitpid(-1,NULL,WNOHANG)!=1); // TODO help me find the holly bug SH
+        setpgrp(); // TODO HOLLY BUG? i dont see any different... SH
 
         char *proc_args[] = {"/bin/bash", "-c" , (char *)cmd_line, NULL};
         if (execv("/bin/bash", proc_args) == -1) {
@@ -184,21 +187,24 @@ void ExternalCommand::execute() {
 
     }
     else { // father. original proc
+        assert(waitpid(-1,NULL,WNOHANG)!=1); // TODO help me find the holly bug SH
+        cout << "my pid is " << getpid << endl; // TODO
+        assert(waitpid(-1,NULL,WNOHANG)!=1); // TODO help me find the holly bug SH
         smash.jb.addJob(*this, RUNNING, pid);
-        int tmp_dubging = waitpid(pid, NULL, WNOHANG);
-
         if (is_bg) {
             cout<< "BG command was created" << endl;
+            assert(waitpid(-1,NULL,WNOHANG)!=1); // TODO help me find the holly bug SH
             // TODO do something
         }
         else {
             if (waitpid(pid,NULL,WUNTRACED) == -1) {
+                assert(waitpid(-1,NULL,WNOHANG)!=1); // TODO help me find the holly bug SH
                 perror("");
             }
         }
         // TODO
     }
-    cout << pid << endl;
+    assert(waitpid(-1,NULL,WNOHANG)!=1); // TODO help me find the holly bug SH
 }
 
 
@@ -288,6 +294,7 @@ Command* SmallShell::CreateCommand(const char *cmd_line) {
     else {
         return new ExternalCommand(cmd_line);
     }
+    assert(waitpid(-1,NULL,WNOHANG)!=1); // TODO help me find the holly bug SH
 
     return nullptr; // TODO should not reach here SH
 }
@@ -300,13 +307,13 @@ void SmallShell::executeCommand(const char *cmd_line) {
   // Please note that you must fork smash process for some commands (e.g., external commands....)
 
   Command* command = SmallShell::CreateCommand(cmd_line);
+    assert(waitpid(-1,NULL,WNOHANG)!=1); // TODO help me find the holly bug SH
   if (!command) {
       return;
   }
   command->execute();
 
   delete(command); // TODO ??
-
 
 }
 
@@ -322,8 +329,8 @@ void SmallShell::setName(string to_set) {
 /**
  this section is the implantation of JobEntry class
 **/
-JobsList::JobEntry::JobEntry(Command& command, time_t time, Status status, int id, int pid)
-        : cmd_line(command.getCmd()), start_time(time), status(status), id(id), pid(pid) {}
+JobsList::JobEntry::JobEntry(Command* command, time_t time, Status status, int id, int pid)
+        : cmd_line(command->getCmd()), start_time(time), status(status), id(id), pid(pid) {}
 
 
 
@@ -367,16 +374,23 @@ JobsList::JobsList(): max_id(0), jobs(){
 };
 
 void JobsList::addJob(Command& cmd, Status status, pid_t pid){
+  cout << "my pid is " << getpid << endl;
+  assert(waitpid(-1,NULL,WNOHANG)!=1); // TODO help me find the holly bug SH
+  removeFinishedJobs(); // TODO
+
   max_id+=1;
-  jobs.push_back(JobEntry(cmd, time(0), status,  max_id, pid));
+  jobs.push_back(JobEntry(&cmd, time(0), status,  max_id, pid));
   //TODO: check if needed
   //cmd->setJobID(max_job_id);
   //cmd->setJobID(max_job_id);
 }
 
 void JobsList::removeFinishedJobs() {
+    cout << "my pid is(removeFinishedJobs) " << getpid << endl; // TODO SH
+    assert(waitpid(-1,NULL,WNOHANG)!=1); // TODO help me find the holly bug SH
     pid_t tmp_pid = 0;
     while (tmp_pid = waitpid(-1,NULL,WNOHANG) > 0) {
+        assert(tmp_pid!=1); // TODO BUG remove
         auto it = jobs.begin();
         while (it->getPid() != tmp_pid) {
             it++;
@@ -392,9 +406,9 @@ void JobsList::removeFinishedJobs() {
 //    while (it < jobs.end()) {
 //
 //        int status;
-//        pid_t res = waitpid((*it).getPid(), &status, WNOHANG);
+//        pid_t res = waitpid(it->getPid(), &status, WNOHANG);
 //        if (res > 0) {
-//            cout << "remove proc " << (*it).getPid() << endl;
+//            cout << "remove proc " << it->getPid() << endl;
 //            jobs.erase(it++);
 //        }
 //        else if (res == -1) {
@@ -437,6 +451,9 @@ void JobsList::removeFinishedJobs() {
 
 
 void JobsList:: printJobsList(){
+
+  assert(waitpid(-1,NULL,WNOHANG)!=1); // TODO help me find the holly bug SH
+
   for(auto job = jobs.begin(); job != jobs.end(); ++job){
     cout << "[" << job->getId()<< "] " << job->getCmd() << " : " << job->getId() << " " << difftime(time(0), job->getStartTime()) << endl;
 //    cout << "[" << job->getId()<< "] " << job->getCmd() << " : " << job->getId() << " " << difftime(time(0), job->getStartTime()) << job->getStatus() << endl;

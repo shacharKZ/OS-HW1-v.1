@@ -133,7 +133,7 @@ public:
         int id;
         string cmd_line;
     public:
-        JobEntry(Command&, time_t, Status, int id, int pid);
+        JobEntry(Command*, time_t, Status, int id, int pid);
         JobEntry(const char*, time_t, Status, int id, int pid);
         JobEntry () = delete;
 //      JobEntry(JobEntry&) = delete ; // TODO in // for dibugging SH
