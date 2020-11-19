@@ -304,13 +304,22 @@ void JobsList::addJob(Command& cmd, Status status, pid_t pid){
 
 void JobsList::removeFinishedJobs(){
   int current_max = 0;
-  for(vector <JobEntry> :: iterator job = jobs.begin(); job != jobs.end(); ++job){
-    cout << "[" << job->getPid()<< "] " << job->getCmd() << " : " << job->getId() << " " << difftime(time(0), job->getStartTime());
+  int result;
+  vector <JobEntry> :: iterator job = jobs.begin();
+  while (job != jobs.end()){
+    result = waitpid(job->getId(), NULL, WNOHANG);
+    assert(result >= 0);
+    if (result == 0) {
+      if(job->getId() > current_max) {
+        current_max = job->getId();
+        ++job;
+      }
+    }// not finished yet
+    else{
+      jobs.erase(job);
+    }
   }
-}
-  jobs.push_back(JobEntry(cmd, time(0), status,  max_id, pid));
-  //TODO: check if needed
-  //cmd->setJobID(max_job_id);
+  max_id = current_max;
 }
 
 
