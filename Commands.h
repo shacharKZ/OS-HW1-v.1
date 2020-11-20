@@ -155,11 +155,12 @@ public:
     void addJob(Command&, Status, pid_t);
     void printJobsList();
     void removeFinishedJobs();
+    JobEntry * getLastJob(int* lastJobId);
     JobEntry * getJobById(int jobId);
     //TODO continue from here - ofir
     void removeJobById(int jobId);
     void killAllJobs();
-    JobEntry * getLastJob(int* lastJobId);
+
     JobEntry *getLastStoppedJob(int *jobId);
     // TODO: Add extra methods or modify exisitng ones as needed
 };
@@ -182,6 +183,7 @@ class KillCommand : public BuiltInCommand {
 
 class ForegroundCommand : public BuiltInCommand {
  // TODO: Add your data members
+ JobsList* jobs;
  public:
   ForegroundCommand(const char* cmd_line, JobsList* jobs);
   virtual ~ForegroundCommand() {}

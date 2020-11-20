@@ -165,7 +165,6 @@ void GetCurrDirCommand::execute() {
 ExternalCommand::ExternalCommand(const char* cmd_line) : Command(cmd_line) {};
 
 
-
 void ExternalCommand::execute() {
 
     bool is_bg = _isBackgroundComamnd(cmd_line);
@@ -199,7 +198,7 @@ void ExternalCommand::execute() {
 }
 
 
-
+// BUILT IN NUMBER #6
 KillCommand::KillCommand(const char* cmd_line) : BuiltInCommand(cmd_line) {};
 
 static int strToInt (string str) {
@@ -252,6 +251,114 @@ void KillCommand::execute() {
         return;
     }
     cout << "signal number " << sig_num << " was sent to pid " << pid << endl;
+}
+
+
+// BUILT IN NUMBER #7
+ForegroundCommand::ForegroundCommand(const char* cmd_line, JobsList* jobs) :BuiltInCommand(cmd_line), jobs(jobs) {}
+
+void ForegroundCommand::execute() {
+  char* args[COMMAND_MAX_ARGS + 1];
+  int args_num = _parseCommandLine(cmd_line, args);
+  string s_tmp = string(cmd_line);
+
+  cout << "test";
+
+
+  /*
+  int num_of_args,status = 0;
+  int jobID;
+  pid_t jobPID;
+  int res=0;
+  char* args[COMMAND_MAX_ARGS + 1];
+
+  SmallShell& smash = SmallShell::getInstance();
+  num_of_args = _parseCommandLine(GetCmdLine(), args);
+  switch (num_of_args) {
+    case 1: {
+      unsigned long list_size = job_list->ListSize();
+      if (list_size == 0) {
+        std::cerr << "smash error: fg: jobs list is empty" << endl;
+        break;
+      }
+      else {
+        //TODO: add function to remove last job so no error occurs!
+        JobsList::JobEntry* last_job = job_list->getLastJob(&jobID);
+        jobPID = last_job->GetCommand()->GetPID();
+        std::cout << last_job->GetCommand()->GetCmdLine() << " : " << jobPID << endl;
+        smash.ChangeCurrCmd(last_job->GetCommand());
+        if(smash.GetCurrCmd()->GetIsPipe()){
+          res=killpg(smash.GetCurrCmd()->GetPID(),SIGCONT);
+        }
+        else{
+          res=killpg(jobPID, SIGCONT);
+        }
+
+        if(res==-1) {
+          perror("smash error: kill failed");
+          break;
+        }
+        res=waitpid(jobPID, &status, WUNTRACED);
+        if(!WIFSTOPPED(status)){ //job finished, wasn't stopped again
+          job_list->removeJobById(jobID);
+        }
+        if(res==-1) {
+          perror("smash error: waitpid failed");
+
+        }
+
+        break;
+      }
+    }
+    case 2: {
+      try {
+        jobID = stoi(args[1]);
+      }
+      catch (exception &e) {
+        std::cerr << "smash error: fg: invalid arguments" << endl;
+        break;
+      }
+      if (jobID<1){
+        std::cerr << "smash error: fg: job-id " << args[1] << " does not exist" << endl;
+        break;
+      }
+      JobsList::JobEntry* job = job_list->getJobById(jobID);
+      if (!job) {
+        std::cerr << "smash error: fg: job-id " << jobID << " does not exist" << endl;
+        break;
+      }
+      jobPID = job->GetCommand()->GetPID();
+      smash.ChangeCurrCmd(job->GetCommand());
+      std::cout << job->GetCommand()->GetCmdLine() << " : " << jobPID << endl;
+      if(smash.GetCurrCmd()->GetIsPipe()){
+        res=killpg(smash.GetCurrCmd()->GetPID(),SIGCONT);
+      }
+      else{
+        res=killpg(jobPID, SIGCONT);
+      }
+
+      if(res==-1) {
+        perror("smash error: kill failed");
+        break;
+      }
+
+      res=waitpid(jobPID, &status, WUNTRACED);
+      if(res==-1) {
+        perror("smash error: waitpid failed");
+      }
+      if(!WIFSTOPPED(status)){ //job finished, wasn't stopped again
+        job_list->removeJobById(jobID);
+      }
+      break;
+    }
+    default:
+      std::cerr << "smash error: fg: invalid arguments" << endl;
+      break;
+
+  }
+  FreeCmdArray(args,num_of_args);
+  */
+
 }
 
 
@@ -326,6 +433,11 @@ Command* SmallShell::CreateCommand(const char *cmd_line) {
     else if (cmd_s == "jobs" || cmd_s == "jobs&") {
         jb.printJobsList();
     }
+
+    else if (cmd_s == "fg" || cmd_s == "fg&") {
+      ForegroundCommand(cmd_line, &jb).execute()    ;
+    }
+
     else {
         return new ExternalCommand(cmd_line);
     }
@@ -497,6 +609,6 @@ JobsList::JobEntry * JobsList::getJobById(int jobId) {
             return tmp;
         }
     }
-
     return nullptr;
 }
+
