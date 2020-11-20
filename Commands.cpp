@@ -210,13 +210,16 @@ static int strToInt (string str) {
         return -1;
     }
 
-    int tmp = n;
-    for (int i = 0; i < str.length()-1; ++i) {
+    int tmp = n / 10;
+    int digits = 1;
+    while (tmp != 0) {
         tmp = tmp / 10;
+        digits++;
     }
-    if (tmp == 0) {
+    if (digits != str.length()) {
         return -1;
     }
+
     return n;
 }
 
@@ -245,8 +248,9 @@ void KillCommand::execute() {
     }
 
     pid_t pid = je->getPid();
-    assert(waitpid(pid,NULL,WNOHANG)==0); // TODO if pass this section so pid is a real proc in prog SH
-    if (killpg(pid, sig_num) == -1) {
+//    assert(waitpid(pid,NULL,WNOHANG)==0); // TODO if pass this section so pid is a real proc in prog SH
+    int flag = kill(pid, sig_num); // TODO the usless arg use for debug. before finish just put it inside the if check SH
+    if (flag == -1) {
         perror("");
         return;
     }
