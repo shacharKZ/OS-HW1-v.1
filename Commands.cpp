@@ -200,15 +200,46 @@ void ExternalCommand::execute() {
 
 
 
-KillCommand::KillCommand(const char* cmd_line, JobsList* jobs) : jobs(jobs), BuiltInCommand(cmd_line) {};
+KillCommand::KillCommand(const char* cmd_line) : BuiltInCommand(cmd_line) {};
 
 void KillCommand::execute() {
-//    string s_tmp = string(cmd_line);
-//    s_tmp = s_tmp.erase(s_tmp.find_first_of("kill"), s_tmp.find_first_of("kill") + 4);
-//    s_tmp = _ltrim(s_tmp);
-//    if (s_tmp)
-//    if (!cmd_line[5] || cmd_line[2][0] != "-") // TODO
 
+    string s_tmp = string(cmd_line);
+    s_tmp = s_tmp.erase(s_tmp.find_first_of("kill"), s_tmp.find_first_of(" ") + 1);
+    s_tmp = _ltrim(s_tmp);
+    s_tmp = _rtrim(s_tmp);
+    if (s_tmp[0] != '-') {
+        cerr << "smash error: kill: invalid arguments" << endl;
+        return;
+    }
+    int proc_id = -1;
+    int sig_num = -1;
+    int tmp_index = s_tmp.find_first_of(' ');
+    try {
+        proc_id = std::stoi(s_tmp.substr(1, tmp_index-1));
+        sig_num = std::stoi(s_tmp.substr(tmp_index+1, s_tmp.length()));
+    }
+    catch (exception &e) {
+        cerr << "smash error: kill: invalid arguments" << endl;
+        return;
+    }
+    if (proc_id == -1 || sig_num == -1) {
+        cerr << "smash error: kill: invalid arguments" << endl;
+        return;
+    }
+    JobsList::JobEntry* je = smash.jb.getJobById(proc_id);
+    if (je == nullptr) {
+        cerr << "smash error: kill: job-id " << proc_id << " does not exist" << endl;
+        return;
+    }
+
+    pid_t pid = je->getPid();
+    assert(waitpid(pid,NULL,WNOHANG)==0); // TODO if pass this section so pid really proc in prog SH
+    if (killpg(pid, sig_num) == -1) {
+        perror("");
+        return;
+    }
+    cout << "signal number " << sig_num << " was sent to pid " << pid << endl;
 }
 
 
@@ -245,7 +276,7 @@ Command* SmallShell::CreateCommand(const char *cmd_line) {
 
     // TODO redirect creation of command for different proposes, like pipe\io SH
 
-    if (cmd_s == "chprompt") {
+    if (cmd_s == "chprompt" || cmd_s == "chprompt&") {
         string name_to_set;
         if (args_num>1) name_to_set = string(args[1]);
         else name_to_set = "smash";
@@ -259,34 +290,33 @@ Command* SmallShell::CreateCommand(const char *cmd_line) {
         return new ChpromptCommand(this, name_to_set, cmd_line);
          */
     }
-    else if (cmd_s == "ls") {
+    else if (cmd_s == "ls" || cmd_s == "ls&") {
 
     }
-    else if (cmd_s == "showpid") {
+    else if (cmd_s == "showpid" || cmd_s == "showpid&") {
       return new ShowPidCommand(cmd_line);
     }
-    else if (cmd_s == "pwd") {
+    else if (cmd_s == "pwd" || cmd_s == "pwd&") {
       return new GetCurrDirCommand(cmd_line);
     }
-    else if (cmd_s == "cd") {
+    else if (cmd_s == "cd" || cmd_s == "cd&") {
       return new ChangeDirCommand(cmd_line, args);
     }
-    else if (cmd_s == "kill") {
-        if (args_num != 3) {
+    else if (cmd_s == "kill" || cmd_s == "kill&") {
+        if (args_num != 3 || args[1][0] != '-') {
             cerr << "smash error: kill: invalid arguments" << endl;
         }
         else {
-            return new KillCommand(cmd_line, &smash.jb); // TODO not implment yet
+            return new KillCommand(cmd_line);
         }
 
     }
-    else if (cmd_s == "jobs") {
+    else if (cmd_s == "jobs" || cmd_s == "jobs&") {
         jb.printJobsList();
     }
     else {
         return new ExternalCommand(cmd_line);
     }
-    assert(waitpid(-1,NULL,WNOHANG)!=1); // TODO help me find the holly bug SH
 
     return nullptr; // TODO should not reach here SH
 }
@@ -440,12 +470,21 @@ void JobsList::removeFinishedJobs(){
 
 
 void JobsList:: printJobsList(){
-
-  assert(waitpid(-1,NULL,WNOHANG)!=1); // TODO help me find the holly bug SH
-
   for(auto job = jobs.begin(); job != jobs.end(); ++job){
     cout << "[" << job->getId()<< "] " << job->getCmd() << " : " << job->getId() << " " << difftime(time(0), job->getStartTime()) << endl;
 //    cout << "[" << job->getId()<< "] " << job->getCmd() << " : " << job->getId() << " " << difftime(time(0), job->getStartTime()) << job->getStatus() << endl;
 
   }
+}
+
+JobsList::JobEntry * JobsList::getJobById(int jobId) {
+
+    for(auto job = jobs.begin(); job != jobs.end(); ++job) {
+        if (job->getId() == jobId) {
+            JobEntry* tmp = &(*job);
+            return tmp;
+        }
+    }
+
+    return nullptr;
 }

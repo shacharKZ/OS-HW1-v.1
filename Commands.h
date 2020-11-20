@@ -32,9 +32,8 @@ protected:
 };
 
 class BuiltInCommand : public Command {
-
 protected:
-    const char* cmd_line;
+//    const char* cmd_line; // TODO WTF?? SH
  public:
   BuiltInCommand(const char* cmd_line);
   virtual ~BuiltInCommand() = default;
@@ -175,11 +174,9 @@ class JobsCommand : public BuiltInCommand {
 };
 
 class KillCommand : public BuiltInCommand {
- // TODO: Add your data members
- JobsList* jobs;
  public:
-  KillCommand(const char* cmd_line, JobsList* jobs);
-  virtual ~KillCommand() {}
+  KillCommand(const char* cmd_line);
+  virtual ~KillCommand() = default;
   void execute() override;
 };
 
