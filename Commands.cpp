@@ -164,48 +164,40 @@ void GetCurrDirCommand::execute() {
 
 ExternalCommand::ExternalCommand(const char* cmd_line) : Command(cmd_line) {};
 
+
+
 void ExternalCommand::execute() {
 
-    assert(waitpid(-1,NULL,WNOHANG)!=1); // TODO help me find the holly bug SH
     bool is_bg = _isBackgroundComamnd(cmd_line);
 
     pid_t pid = fork();
-    assert(waitpid(-1,NULL,WNOHANG)!=1); // TODO help me find the holly bug SH
     if (pid == -1) {
         perror(""); // or cout << "smash.... fork fail..."...
     }
     else if (pid == 0) {// son. the new forked proc
-        // TODO mybe
-        assert(waitpid(-1,NULL,WNOHANG)!=1); // TODO help me find the holly bug SH
-        setpgrp(); // TODO HOLLY BUG? i dont see any different... SH
-
-        char *proc_args[] = {"/bin/bash", "-c" , (char *)cmd_line, NULL};
-        if (execv("/bin/bash", proc_args) == -1) {
+        char cmd_cpy[COMMAND_ARGS_MAX_LENGTH];
+        strcpy(cmd_cpy,cmd_line);
+        _removeBackgroundSign(cmd_cpy);
+        const char *proc_args[] = {"/bin/bash", "-c" , cmd_cpy, nullptr};
+        if (execv("/bin/bash", (char * const*) proc_args) == -1) {
             perror("");
             exit(0);
         }
-
     }
     else { // father. original proc
-        assert(waitpid(-1,NULL,WNOHANG)!=1); // TODO help me find the holly bug SH
-        cout << "my pid is " << getpid << endl; // TODO
-        assert(waitpid(-1,NULL,WNOHANG)!=1); // TODO help me find the holly bug SH
-        smash.jb.addJob(*this, RUNNING, pid);
+//        smash.jb.addJob(*this, RUNNING, pid); // TODO should also non "&" be added to jb?
         if (is_bg) {
-            cout<< "BG command was created" << endl;
-            assert(waitpid(-1,NULL,WNOHANG)!=1); // TODO help me find the holly bug SH
-            // TODO do something
+            smash.jb.addJob(*this, RUNNING, pid);
+//            cout<< "BG command was created" << endl; // TODO for debug
         }
         else {
             if (waitpid(pid,NULL,WUNTRACED) == -1) {
-                assert(waitpid(-1,NULL,WNOHANG)!=1); // TODO help me find the holly bug SH
                 perror("");
             }
         }
-        // TODO
     }
-    assert(waitpid(-1,NULL,WNOHANG)!=1); // TODO help me find the holly bug SH
 }
+
 
 
 KillCommand::KillCommand(const char* cmd_line, JobsList* jobs) : jobs(jobs), BuiltInCommand(cmd_line) {};
@@ -374,8 +366,6 @@ JobsList::JobsList(): max_id(0), jobs(){
 };
 
 void JobsList::addJob(Command& cmd, Status status, pid_t pid){
-  cout << "my pid is " << getpid << endl;
-  assert(waitpid(-1,NULL,WNOHANG)!=1); // TODO help me find the holly bug SH
   removeFinishedJobs(); // TODO
 
   max_id+=1;
@@ -385,43 +375,42 @@ void JobsList::addJob(Command& cmd, Status status, pid_t pid){
   //cmd->setJobID(max_job_id);
 }
 
-void JobsList::removeFinishedJobs() {
-    cout << "my pid is(removeFinishedJobs) " << getpid << endl; // TODO SH
-    assert(waitpid(-1,NULL,WNOHANG)!=1); // TODO help me find the holly bug SH
-    pid_t tmp_pid = 0;
-    while (tmp_pid = waitpid(-1,NULL,WNOHANG) > 0) {
-        assert(tmp_pid!=1); // TODO BUG remove
-        auto it = jobs.begin();
-        while (it->getPid() != tmp_pid) {
-            it++;
-        }
-        cout << "erase from jobs proc " << it->getPid() << endl;
-        jobs.erase(it);
-    }
-}
 
-//void JobsList::removeFinishedJobs(){
-//
-//    auto it = jobs.begin();
-//    while (it < jobs.end()) {
-//
-//        int status;
-//        pid_t res = waitpid(it->getPid(), &status, WNOHANG);
-//        if (res > 0) {
-//            cout << "remove proc " << it->getPid() << endl;
-//            jobs.erase(it++);
+//void JobsList::removeFinishedJobs() {
+//    pid_t tmp_pid = 0;
+//    while (tmp_pid = waitpid(-1,NULL,WNOHANG) > 0) {
+//        assert(tmp_pid!=1); // TODO BUG remove
+//        auto it = jobs.begin();
+//        while (it->getPid() != tmp_pid) {
+//            it++;
 //        }
-//        else if (res == -1) {
-//            cout << "some error.... " << (*it).getPid() << endl;
-////            perror("");
-//            ++it;
-//        }
-//        else {
-//            cout << "this proc is still running!!!!!! " << (*it).getPid() << endl;
-//            ++it;
-//        }
+//        cout << "erase from jobs proc " << it->getPid() << endl;
+//        jobs.erase(it);
 //    }
 //}
+
+void JobsList::removeFinishedJobs(){
+
+    auto it = jobs.begin();
+    while (it < jobs.end()) {
+
+        int status;
+        pid_t res = waitpid(it->getPid(), &status, WNOHANG);
+        if (res > 0) {
+//            cout << "remove proc " << it->getPid() << endl; // TODO for debug
+            jobs.erase(it++);
+        }
+        else if (res == -1) { // TODO for debug. when finish union this with prev "if" section
+//            cout << "some error.... " << (*it).getPid() << "... anyway, i deleted it"<< endl; // TODO for debug
+//            perror(""); // TODO for debug. mostly happens when race with short process like sleep 1&
+            jobs.erase(it++);
+        }
+        else {
+//            cout << "this proc is still running!!!!!! " << (*it).getPid() << endl; // TODO for debug
+            ++it;
+        }
+    }
+}
 
 //void JobsList::removeFinishedJobs(){
 //  int current_max = 0;
