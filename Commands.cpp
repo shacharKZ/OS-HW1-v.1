@@ -202,6 +202,25 @@ void ExternalCommand::execute() {
 
 KillCommand::KillCommand(const char* cmd_line) : BuiltInCommand(cmd_line) {};
 
+static int strToInt (string str) {
+    int n = -1;
+    try {
+        n = std::stoi(str);
+    }
+    catch (exception &e) {
+        return -1;
+    }
+
+    int tmp = n;
+    for (int i = 0; i < str.length()-1; ++i) {
+        tmp = tmp / 10;
+    }
+    if (tmp == 0) {
+        return -1;
+    }
+    return n;
+}
+
 void KillCommand::execute() {
 
     string s_tmp = string(cmd_line);
@@ -212,17 +231,10 @@ void KillCommand::execute() {
         cerr << "smash error: kill: invalid arguments" << endl;
         return;
     }
-    int proc_id = -1;
-    int sig_num = -1;
     int tmp_index = s_tmp.find_first_of(' ');
-    try {
-        proc_id = std::stoi(s_tmp.substr(1, tmp_index-1));
-        sig_num = std::stoi(s_tmp.substr(tmp_index+1, s_tmp.length()));
-    }
-    catch (exception &e) {
-        cerr << "smash error: kill: invalid arguments" << endl;
-        return;
-    }
+    int proc_id = strToInt(s_tmp.substr(1, tmp_index-1));
+    int sig_num = strToInt(s_tmp.substr(tmp_index+1, s_tmp.length()));
+
     if (proc_id == -1 || sig_num == -1) {
         cerr << "smash error: kill: invalid arguments" << endl;
         return;
