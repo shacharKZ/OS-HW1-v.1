@@ -234,7 +234,7 @@ void KillCommand::execute() {
     }
 
     pid_t pid = je->getPid();
-    assert(waitpid(pid,NULL,WNOHANG)==0); // TODO if pass this section so pid really proc in prog SH
+    assert(waitpid(pid,NULL,WNOHANG)==0); // TODO if pass this section so pid is a real proc in prog SH
     if (killpg(pid, sig_num) == -1) {
         perror("");
         return;
