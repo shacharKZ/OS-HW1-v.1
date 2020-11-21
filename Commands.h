@@ -157,6 +157,7 @@ public:
     void printJobsList();
     void removeFinishedJobs();
     JobEntry *getLastStoppedJob();
+    JobEntry *getLastJob();
     JobEntry * getJobById(int jobId);
     void removeJobById(int jobId);
     //TODO continue from here - ofir
@@ -192,22 +193,29 @@ class ForegroundCommand : public BuiltInCommand {
 };
 
 class BackgroundCommand : public BuiltInCommand {
- // TODO: Add your data members
- public:
-  BackgroundCommand(const char* cmd_line, JobsList* jobs);
-  virtual ~BackgroundCommand() {}
-  void execute() override;
+    JobsList* jobs;
+  public:
+    BackgroundCommand(const char* cmd_line, JobsList* jobs);
+    virtual ~BackgroundCommand() {}
+    void execute() override;
 };
 
-// TODO: add more classes if needed 
-// maybe ls, timeout ?
-
+/* -------------------------------------------------
+ *            Small Shell
+--------------------------------------------------- */
 class SmallShell {
  private:
-  // TODO: Add your data members
-  std::string name;
-  SmallShell();
+    SmallShell();
+    std::string name;
+    pid_t currentPid;
+    char* currentCmd;
  public:
+  // fields
+  JobsList jb;
+  string last_pwd;
+  ExternalCommand* currCmd;
+
+  // Constructors
   Command *CreateCommand(const char* cmd_line);
   SmallShell(SmallShell const&)      = delete; // disable copy ctor
   void operator=(SmallShell const&)  = delete; // disable = operator
@@ -218,12 +226,18 @@ class SmallShell {
     return instance;
   }
   ~SmallShell(); // TODO probably future valgrind problems.... SH
+
+  // methods
   void executeCommand(const char* cmd_line);
-  // TODO: add extra methods as needed
   string getName();
-  JobsList jb;
-  string last_pwd;
   void setName(std::string set_name);
+  pid_t getcurrentPid();
+  void setcurrentPid(pid_t currentPid);
+  ExternalCommand* getcurrentCommand();
+  void setcurrentCommand(ExternalCommand*);
+
+  char* getcurrentCmd();
+
   Command* createCommand(const char *cmd_line);
 };
 
