@@ -39,7 +39,9 @@ void ctrlCHandler(int sig_num) {
     return;
   }
   cout << "smash: process " << currPid << " was killed" << endl;
+
 }
+
 
 
 void alarmHandler(int sig_num) {

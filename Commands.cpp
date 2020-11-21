@@ -286,8 +286,7 @@ void ForegroundCommand::execute() {
   // removing from job list
   jobs->removeJobById(lastJob->getId());
 
-  smash.setcurrentPid(jobPid);
-  smash.setcurrentCmd(lastJob->getCmd().c_str());
+
   // continue the job if it stopped
   if(lastJob->getStatus() == STOPPED) {
     if (kill(jobPid, SIGCONT) == -1) {
@@ -298,10 +297,14 @@ void ForegroundCommand::execute() {
 
   cout << lastJob->getCmd() << " :" << jobPid <<endl;
 
+  smash.setcurrentPid(jobPid);
+  smash.setcurrentCmd(lastJob->getCmd().c_str());
+
   if (waitpid(jobPid, nullptr, WUNTRACED) == -1) {
     perror("smash error: waitpid failed");
     return;
   }
+  smash.setcurrentPid(-1);
 }
 
 
