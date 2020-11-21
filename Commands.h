@@ -147,7 +147,7 @@ public:
 
 private:
     vector<JobEntry> jobs;
-    int max_id;
+//    int max_id;
     int last_stooped;
 
 public:

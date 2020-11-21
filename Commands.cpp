@@ -7,6 +7,7 @@
 #include <iomanip>
 #include "Commands.h"
 #include <assert.h>
+#include <fstream>
 
 extern SmallShell& smash;
 
@@ -29,6 +30,7 @@ const std::string WHITESPACE = " \n\r\t\f\v";
 
 #define EXEC(path, arg) \
   execvp((path), (arg));
+
 
 string _ltrim(const std::string& s)
 {
@@ -369,6 +371,62 @@ void BackgroundCommand::execute() {
 }
 
 
+
+RedirectionCommand::RedirectionCommand (const char* cmd_line) : Command(cmd_line) {};
+
+void RedirectionCommand::execute() {
+    string cmd_cpy = string(cmd_line);
+    int split_index = cmd_cpy.find_first_of(">");
+    if (split_index - 1 <= 0) {
+        cout << "smash error: invalid arguments" << endl;
+    }
+
+    bool flag_overwrite = true;
+    string file_name = "";
+
+    if (cmd_cpy.length() >= split_index+1 && cmd_line[split_index+1] == '>') {
+        flag_overwrite = false;
+        file_name = cmd_cpy.substr(split_index+2);
+    }
+    else {
+        file_name = cmd_cpy.substr(split_index+1);
+    }
+    string real_cmd = cmd_cpy.substr(0, split_index - 1);
+
+    fstream file;
+    try {
+        if (flag_overwrite) {
+            file.open(file_name, ios::out);
+        }
+        else {
+            file.open(file_name, ios::app);
+        }
+
+    }
+    catch (exception &e) {
+        perror("");
+        return;
+    }
+
+    streambuf* def_buff = cout.rdbuf();
+    try {
+        cout.rdbuf(file.rdbuf());
+    }
+    catch (exception &e) {
+        perror("");
+        cout.rdbuf(def_buff);
+        file.close();
+        return;
+    }
+
+    smash.executeCommand(real_cmd.c_str());
+
+    cout.rdbuf(def_buff);
+    file.close();
+}
+
+
+
  /// --------------------------- smash V, Command ^ ---------------------------
 
 SmallShell::SmallShell() : name("smash"), last_pwd(""), jb(){
@@ -393,6 +451,14 @@ Command* SmallShell::CreateCommand(const char *cmd_line) {
     return new ExternalCommand(cmd_line);
   }
   */
+
+
+    if (string(cmd_line).find_first_of(">") != -1) {
+        return new RedirectionCommand(cmd_line);
+    }
+    else if (string(cmd_line).find_first_of("|") != -1) {
+//        return new PipeCommand(cmd_line); // TODO
+    }
 
     char* args[COMMAND_MAX_ARGS];
     int args_num = _parseCommandLine(cmd_line, args);
@@ -539,19 +605,25 @@ void JobsList::JobEntry::setStatus(Status new_status) {
 /**
  * this section is the implantation of JobsList class
  */
-JobsList::JobsList(): max_id(0), jobs(){
+JobsList::JobsList(): jobs(){
   last_stooped = -1;
 };
 
 void JobsList::addJob(Command& cmd, Status status, pid_t pid){
-  max_id+=1;
-  jobs.push_back(JobEntry(&cmd, time(0), status,  max_id, pid));
+  int id = 1;
+  if (!jobs.empty()) {
+      id = jobs.back().getId() + 1;
+  }
+  jobs.push_back(JobEntry(&cmd, time(0), status,  id, pid));
 }
 
 
 void JobsList::addJob(const char* cmd, Status status, pid_t pid){
-  max_id+=1;
-  jobs.push_back(JobEntry(cmd, time(0), status,  max_id, pid));
+  int id = 1;
+  if (!jobs.empty()) {
+      id = jobs.back().getId() + 1;
+  }
+  jobs.push_back(JobEntry(cmd, time(0), status, id, pid));
 }
 
 
