@@ -201,28 +201,6 @@ void ExternalCommand::execute() {
 // BUILT IN NUMBER #6
 KillCommand::KillCommand(const char* cmd_line) : BuiltInCommand(cmd_line) {};
 
-static int strToInt (string str) {
-    int n = -1;
-    try {
-        n = std::stoi(str);
-    }
-    catch (exception &e) {
-        return -1;
-    }
-
-    int tmp = n / 10;
-    int digits = 1;
-    while (tmp != 0) {
-        tmp = tmp / 10;
-        digits++;
-    }
-    if (digits != str.length()) {
-        return -1;
-    }
-
-    return n;
-}
-
 void KillCommand::execute() {
 
     string s_tmp = string(cmd_line);
@@ -234,8 +212,8 @@ void KillCommand::execute() {
         return;
     }
     int tmp_index = s_tmp.find_first_of(' ');
-    int proc_id = strToInt(s_tmp.substr(1, tmp_index-1));
-    int sig_num = strToInt(s_tmp.substr(tmp_index+1, s_tmp.length()));
+    int proc_id = Utils::strToInt(s_tmp.substr(1, tmp_index-1));
+    int sig_num = Utils::strToInt(s_tmp.substr(tmp_index+1, s_tmp.length()));
 
     if (proc_id == -1 || sig_num == -1) {
         cerr << "smash error: kill: invalid arguments" << endl;
@@ -263,106 +241,56 @@ ForegroundCommand::ForegroundCommand(const char* cmd_line, JobsList* jobs) :Buil
 
 void ForegroundCommand::execute() {
   char* args[COMMAND_MAX_ARGS + 1];
-  int args_num = _parseCommandLine(cmd_line, args);
-  string s_tmp = string(cmd_line);
+  int argsNum = _parseCommandLine(cmd_line, args);
+  pid_t jobPid;
+  int jobId;
+  JobsList::JobEntry* lastJob;
 
-  cout << "test";
-
-
-  /*
-  int num_of_args,status = 0;
-  int jobID;
-  pid_t jobPID;
-  int res=0;
-  char* args[COMMAND_MAX_ARGS + 1];
-
-  SmallShell& smash = SmallShell::getInstance();
-  num_of_args = _parseCommandLine(GetCmdLine(), args);
-  switch (num_of_args) {
-    case 1: {
-      unsigned long list_size = job_list->ListSize();
-      if (list_size == 0) {
-        std::cerr << "smash error: fg: jobs list is empty" << endl;
-        break;
-      }
-      else {
-        //TODO: add function to remove last job so no error occurs!
-        JobsList::JobEntry* last_job = job_list->getLastJob(&jobID);
-        jobPID = last_job->GetCommand()->GetPID();
-        std::cout << last_job->GetCommand()->GetCmdLine() << " : " << jobPID << endl;
-        smash.ChangeCurrCmd(last_job->GetCommand());
-        if(smash.GetCurrCmd()->GetIsPipe()){
-          res=killpg(smash.GetCurrCmd()->GetPID(),SIGCONT);
-        }
-        else{
-          res=killpg(jobPID, SIGCONT);
-        }
-
-        if(res==-1) {
-          perror("smash error: kill failed");
-          break;
-        }
-        res=waitpid(jobPID, &status, WUNTRACED);
-        if(!WIFSTOPPED(status)){ //job finished, wasn't stopped again
-          job_list->removeJobById(jobID);
-        }
-        if(res==-1) {
-          perror("smash error: waitpid failed");
-
-        }
-
-        break;
-      }
+  if (argsNum == 1) {
+    lastJob = jobs->getLastStoppedJob();
+    if (lastJob) {
+      jobPid = lastJob->getPid();
+      jobs->removeJobById(lastJob->getId());
+    } else {
+      cout << "smash error: fg: jobs list is empty" << endl;
     }
-    case 2: {
-      try {
-        jobID = stoi(args[1]);
-      }
-      catch (exception &e) {
-        std::cerr << "smash error: fg: invalid arguments" << endl;
-        break;
-      }
-      if (jobID<1){
-        std::cerr << "smash error: fg: job-id " << args[1] << " does not exist" << endl;
-        break;
-      }
-      JobsList::JobEntry* job = job_list->getJobById(jobID);
-      if (!job) {
-        std::cerr << "smash error: fg: job-id " << jobID << " does not exist" << endl;
-        break;
-      }
-      jobPID = job->GetCommand()->GetPID();
-      smash.ChangeCurrCmd(job->GetCommand());
-      std::cout << job->GetCommand()->GetCmdLine() << " : " << jobPID << endl;
-      if(smash.GetCurrCmd()->GetIsPipe()){
-        res=killpg(smash.GetCurrCmd()->GetPID(),SIGCONT);
-      }
-      else{
-        res=killpg(jobPID, SIGCONT);
-      }
-
-      if(res==-1) {
-        perror("smash error: kill failed");
-        break;
-      }
-
-      res=waitpid(jobPID, &status, WUNTRACED);
-      if(res==-1) {
-        perror("smash error: waitpid failed");
-      }
-      if(!WIFSTOPPED(status)){ //job finished, wasn't stopped again
-        job_list->removeJobById(jobID);
-      }
-      break;
-    }
-    default:
-      std::cerr << "smash error: fg: invalid arguments" << endl;
-      break;
-
   }
-  FreeCmdArray(args,num_of_args);
-  */
 
+  else if (argsNum == 2) {
+    jobId = Utils::strToInt(args[1]);
+    if (jobId == -1) {
+      cout << "smash error: fg: invalid arguments" << endl;
+      return;
+    } else if (jobId < 0) {
+      cout << "smash error: fg: invalid arguments" << endl;
+      return;
+    } else {
+      lastJob = jobs->getJobById(jobId);
+      if (!lastJob) {
+        cout << "smash error: fg: job-id " << jobId << " does not exist" << endl;
+        return;
+      }
+      else
+        jobPid = lastJob->getPid();
+    }
+  }
+
+  else {
+    cout << "smash error: fg: invalid arguments";
+    return;
+  }
+
+
+  // continue the job
+  if (kill(jobPid, SIGCONT) == -1) {
+    perror("smash error: kill failed");
+    return;
+  }
+
+  if (waitpid(jobPid, nullptr, WUNTRACED) == -1) {
+    perror("smash error: waitpid failed");
+    return;
+  }
 }
 
 
@@ -439,7 +367,7 @@ Command* SmallShell::CreateCommand(const char *cmd_line) {
     }
 
     else if (cmd_s == "fg" || cmd_s == "fg&") {
-      ForegroundCommand(cmd_line, &jb).execute()    ;
+      return new ForegroundCommand(cmd_line, &jb) ;
     }
 
     else {
@@ -615,4 +543,26 @@ JobsList::JobEntry * JobsList::getJobById(int jobId) {
     }
     return nullptr;
 }
+
+JobsList::JobEntry *JobsList::getLastStoppedJob() {
+  for(auto job = jobs.rbegin(); job != jobs.rend(); ++job){
+      if (job->getStatus() == STOPPED)
+        return &(*job);
+    }
+  return nullptr;
+}
+
+
+void JobsList::removeJobById(int jobId) {
+  for(auto job = jobs.begin(); job != jobs.end(); ++job){
+    if (job->getId() == jobId) {
+      jobs.erase(job);
+      return;
+    }
+  }
+
+  //TODO remove it before done, for debug
+  cout << "no job with id: " << jobId << "found" << endl;
+}
+
 

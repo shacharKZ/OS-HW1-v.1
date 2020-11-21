@@ -2,6 +2,7 @@
 #define SMASH_COMMAND_H_
 
 #include <vector>
+#include <cctype>
 
 using namespace std;
 
@@ -155,13 +156,13 @@ public:
     void addJob(Command&, Status, pid_t);
     void printJobsList();
     void removeFinishedJobs();
-    JobEntry * getLastJob(int* lastJobId);
+    JobEntry *getLastStoppedJob();
     JobEntry * getJobById(int jobId);
-    //TODO continue from here - ofir
     void removeJobById(int jobId);
+    //TODO continue from here - ofir
+    JobEntry * getLastJob(int* lastJobId);
     void killAllJobs();
 
-    JobEntry *getLastStoppedJob(int *jobId);
     // TODO: Add extra methods or modify exisitng ones as needed
 };
 
@@ -237,3 +238,32 @@ class SmallShell {
 //};
 
 #endif //SMASH_COMMAND_H_
+
+
+/* --------------------------------------------------------
+ * ----------------------UTILS-----------------------------
+ */
+
+class Utils {
+public:
+    static int strToInt (string str) {
+      int n = -1;
+      try {
+        n = std::stoi(str);
+      }
+      catch (exception &e) {
+        return -1;
+      }
+
+      int tmp = n / 10;
+      int digits = 1;
+      while (tmp != 0) {
+        tmp = tmp / 10;
+        digits++;
+      }
+      if (digits != str.length()) {
+        return -1;
+      }
+      return n;
+    }
+};
