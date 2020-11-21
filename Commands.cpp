@@ -190,12 +190,12 @@ void ExternalCommand::execute() {
 //            cout<< "BG command was created" << endl; // TODO for debug
         }
         else {
-            smash.setcurrentCommand(this);
             smash.setcurrentPid(pid);
+            smash.setcurrentCmd(cmd_line);
             if (waitpid(pid,NULL,WUNTRACED) == -1) {
                 perror("");
             }
-            smash.setcurrentCommand(nullptr);
+            smash.setcurrentPid(-1);
         }
     }
 }
@@ -286,6 +286,8 @@ void ForegroundCommand::execute() {
   // removing from job list
   jobs->removeJobById(lastJob->getId());
 
+  smash.setcurrentPid(jobPid);
+  smash.setcurrentCmd(lastJob->getCmd().c_str());
   // continue the job if it stopped
   if(lastJob->getStatus() == STOPPED) {
     if (kill(jobPid, SIGCONT) == -1) {
@@ -295,6 +297,7 @@ void ForegroundCommand::execute() {
   }
 
   cout << lastJob->getCmd() << " :" << jobPid <<endl;
+
   if (waitpid(jobPid, nullptr, WUNTRACED) == -1) {
     perror("smash error: waitpid failed");
     return;
@@ -479,17 +482,13 @@ void SmallShell::setcurrentPid(pid_t pid) {
    currentPid = pid;
 }
 
-char* SmallShell::getcurrentCmd() {
+const char* SmallShell::getcurrentCmd() {
   return currentCmd;
 }
 
 
-void SmallShell::setcurrentCommand(ExternalCommand* cmd) {
-  currCmd = cmd;
-}
-
-ExternalCommand* SmallShell::getcurrentCommand() {
-  return currCmd;
+void SmallShell::setcurrentCmd(const char* cmd) {
+  strcpy(currentCmd, cmd);
 }
 
 
@@ -544,6 +543,12 @@ JobsList::JobsList(): max_id(0), jobs(){
 void JobsList::addJob(Command& cmd, Status status, pid_t pid){
   max_id+=1;
   jobs.push_back(JobEntry(&cmd, time(0), status,  max_id, pid));
+}
+
+
+void JobsList::addJob(const char* cmd, Status status, pid_t pid){
+  max_id+=1;
+  jobs.push_back(JobEntry(cmd, time(0), status,  max_id, pid));
 }
 
 
