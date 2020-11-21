@@ -7,7 +7,8 @@
 #include <iomanip>
 #include "Commands.h"
 #include <assert.h>
-#include <fstream>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 extern SmallShell& smash;
 
@@ -386,43 +387,63 @@ void RedirectionCommand::execute() {
 
     if (cmd_cpy.length() >= split_index+1 && cmd_line[split_index+1] == '>') {
         flag_overwrite = false;
-        file_name = cmd_cpy.substr(split_index+2);
+        file_name = _trim(cmd_cpy).substr(split_index+2);
     }
     else {
         file_name = cmd_cpy.substr(split_index+1);
     }
+    file_name = _trim(file_name);
     string real_cmd = cmd_cpy.substr(0, split_index - 1);
 
-    fstream file;
+    int dup_org = -1;
+    try {
+        dup_org = dup(1);
+        close(1);
+    }
+    catch (exception &e) {
+        perror("");
+        return;
+    }
+    if (dup_org == -1) {
+        cout << "smash error:....." << endl; // TODO
+        return;
+    }
+
+    int file = -1;
     try {
         if (flag_overwrite) {
-            file.open(file_name, ios::out);
+            file = open(file_name.c_str(),O_CREAT | O_WRONLY | O_TRUNC, 0666);
         }
         else {
-            file.open(file_name, ios::app);
+            file = open(file_name.c_str(),O_CREAT | O_WRONLY | O_APPEND, 0666);
         }
-
     }
     catch (exception &e) {
         perror("");
         return;
     }
 
-    streambuf* def_buff = cout.rdbuf();
-    try {
-        cout.rdbuf(file.rdbuf());
-    }
-    catch (exception &e) {
-        perror("");
-        cout.rdbuf(def_buff);
-        file.close();
+    if (file == -1) {
+        cout << "smash error:....." << endl; // TODO
         return;
     }
 
     smash.executeCommand(real_cmd.c_str());
 
-    cout.rdbuf(def_buff);
-    file.close();
+    try {
+        if (close(1) == -1) {
+            cout << "smash error:....." << endl; // TODO
+            return;
+        }
+
+        if (dup(dup_org) == -1) {
+            cout << "smash error:....." << endl; // TODO
+            return;
+        }
+    }
+    catch (exception &e) {
+        perror("");
+    }
 }
 
 
@@ -481,7 +502,7 @@ Command* SmallShell::CreateCommand(const char *cmd_line) {
          */
     }
     else if (cmd_s == "ls" || cmd_s == "ls&") {
-
+        // TODO!!!!!!
     }
     else if (cmd_s == "showpid" || cmd_s == "showpid&") {
       return new ShowPidCommand(cmd_line);
