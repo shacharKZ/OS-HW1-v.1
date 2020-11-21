@@ -131,7 +131,7 @@ public:
         time_t start_time;
         Status status;
         int id;
-        string cmd_line;
+        const char* cmd_line;
     public:
         JobEntry(Command*, time_t, Status, int id, int pid);
         JobEntry(const char*, time_t, Status, int id, int pid);
@@ -141,7 +141,7 @@ public:
         time_t getStartTime();
         Status getStatus();
         int getId ();
-        string getCmd ();
+        const char* getCmd ();
         void setStatus(Status);
     };
 
@@ -154,6 +154,7 @@ public:
     JobsList();
     ~JobsList() = default;
     void addJob(Command&, Status, pid_t);
+    void addJob(const char*, Status, pid_t);
     void printJobsList();
     void removeFinishedJobs();
     JobEntry *getLastStoppedJob();
@@ -208,12 +209,12 @@ class SmallShell {
     SmallShell();
     std::string name;
     pid_t currentPid;
-    char* currentCmd;
+    const char* currentCmd;
+
  public:
   // fields
   JobsList jb;
   string last_pwd;
-  ExternalCommand* currCmd;
 
   // Constructors
   Command *CreateCommand(const char* cmd_line);
@@ -233,10 +234,8 @@ class SmallShell {
   void setName(std::string set_name);
   pid_t getcurrentPid();
   void setcurrentPid(pid_t currentPid);
-  ExternalCommand* getcurrentCommand();
-  void setcurrentCommand(ExternalCommand*);
-
-  char* getcurrentCmd();
+  const char* getcurrentCmd();
+  void setcurrentCmd(const char*);
 
   Command* createCommand(const char *cmd_line);
 };

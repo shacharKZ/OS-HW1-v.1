@@ -185,17 +185,18 @@ void ExternalCommand::execute() {
     }
     else { // father. original proc
 //        smash.jb.addJob(*this, RUNNING, pid); // TODO should also non "&" be added to jb?
+
         if (is_bg) {
             smash.jb.addJob(*this, RUNNING, pid);
 //            cout<< "BG command was created" << endl; // TODO for debug
         }
         else {
-            smash.setcurrentCommand(this);
-            smash.setcurrentPid(pid);
-            if (waitpid(pid,NULL,WUNTRACED) == -1) {
-                perror("");
-            }
-            smash.setcurrentCommand(nullptr);
+          smash.setcurrentPid(pid);
+          smash.setcurrentCmd(cmd_line);
+          if (waitpid(pid,NULL,WUNTRACED) == -1) {
+              perror("");
+          }
+          smash.setcurrentPid(-1);
         }
     }
 }
@@ -294,11 +295,17 @@ void ForegroundCommand::execute() {
     }
   }
 
+  // updating smash what running
+  smash.setcurrentPid(lastJob->getPid());
+  smash.setcurrentCmd(lastJob->getCmd());
+
   cout << lastJob->getCmd() << " :" << jobPid <<endl;
   if (waitpid(jobPid, nullptr, WUNTRACED) == -1) {
     perror("smash error: waitpid failed");
+    smash.setcurrentPid(-1);
     return;
   }
+  smash.setcurrentPid(-1);
 }
 
 
@@ -437,6 +444,10 @@ Command* SmallShell::CreateCommand(const char *cmd_line) {
       return new ForegroundCommand(cmd_line, &jb) ;
     }
 
+    else if (cmd_s == "bg" || cmd_s == "bg&") {
+      return new BackgroundCommand(cmd_line, &jb);
+    }
+
     else {
         return new ExternalCommand(cmd_line);
     }
@@ -479,18 +490,14 @@ void SmallShell::setcurrentPid(pid_t pid) {
    currentPid = pid;
 }
 
-char* SmallShell::getcurrentCmd() {
+const char* SmallShell::getcurrentCmd() {
   return currentCmd;
 }
 
-
-void SmallShell::setcurrentCommand(ExternalCommand* cmd) {
-  currCmd = cmd;
+void SmallShell::setcurrentCmd(const char* cmd) {
+  currentCmd = cmd;
 }
 
-ExternalCommand* SmallShell::getcurrentCommand() {
-  return currCmd;
-}
 
 
 
@@ -525,7 +532,7 @@ Status JobsList::JobEntry::getStatus() {
 }
 
 
-string JobsList::JobEntry::getCmd(){
+const char* JobsList::JobEntry::getCmd(){
   return cmd_line;
 }
 
@@ -546,6 +553,11 @@ void JobsList::addJob(Command& cmd, Status status, pid_t pid){
   jobs.push_back(JobEntry(&cmd, time(0), status,  max_id, pid));
 }
 
+
+void JobsList::addJob(const char* cmd, Status status, pid_t pid){
+  max_id+=1;
+  jobs.push_back(JobEntry(cmd, time(0), status,  max_id, pid));
+}
 
 //void JobsList::removeFinishedJobs() {
 //    pid_t tmp_pid = 0;

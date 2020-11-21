@@ -9,11 +9,11 @@ extern SmallShell& smash;
 
 void ctrlZHandler(int sig_num) {
   cout<<"smash: got ctrl-Z" <<endl;
-  Command* cmd = smash.getcurrentCommand();
   pid_t currPid = smash.getcurrentPid();
+  const char* cmd_line = smash.getcurrentCmd();
 
   // no process on back ground
-  if (cmd == nullptr)
+  if (currPid == -1)
     return;
 
   if(kill(currPid ,SIGSTOP)==-1){
@@ -22,16 +22,16 @@ void ctrlZHandler(int sig_num) {
   }
 
   cout << "smash: process " << currPid << " was stopped" << endl;
-  smash.jb.addJob(*cmd, STOPPED, currPid);
+  smash.jb.addJob(cmd_line, STOPPED, currPid);
 }
 
 void ctrlCHandler(int sig_num) {
-  cout<<"smash: got ctrl-Z" <<endl;
-  Command* cmd = smash.getcurrentCommand();
+  cout<<"smash: got ctrl-C" <<endl;
   pid_t currPid = smash.getcurrentPid();
+  const char* cmd_line = smash.getcurrentCmd();
 
   // no process on back ground
-  if (cmd == nullptr)
+  if (currPid == -1)
     return;
 
   if(kill(currPid ,SIGKILL)==-1){
