@@ -9,8 +9,9 @@
 #include <assert.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include <sys/types.h>
+//#include <sys/types.h>
 #include <dirent.h>
+#include <algorithm>
 
 extern SmallShell& smash;
 
@@ -113,6 +114,7 @@ void LSCommand::execute() {
     }
 
     struct dirent **names;
+    vector<string> vec;
 
     int len = scandir(".", &names, 0, alphasort);
     if (len < 0) {
@@ -120,10 +122,15 @@ void LSCommand::execute() {
         return;
     }
     for (int i = 0; i < len; ++i) {
-        cout << names[i]->d_name << endl;
+        vec.push_back(names[i]->d_name);
         free(names[i]);
     }
     free(names);
+
+    sort(vec.begin(), vec.end());
+    for (auto name : vec) {
+        cout << name << endl;
+    }
 
 //    DIR* dir = opendir(path);
 //    dirent * file_name = readdir(dir);
