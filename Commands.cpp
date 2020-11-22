@@ -481,74 +481,137 @@ void RedirectionCommand::execute() {
 PipeCommand::PipeCommand(const char* cmd_line) : Command(cmd_line) {};
 
 void PipeCommand::execute() {
-    //// smash fork son fork grandson
-    //// son - reader, grandson - writer
-    bool out_or_error = STDOUT_FILENO;
+    //// smash fork first son and  fork second son
+    //// first - reader, second - writer
+    bool out_or_err = STDOUT_FILENO; // STDOUT_FILENO=1
+
     string cmd_cpy = string(cmd_line);
-    string grandson_cmd; // writer
+    string first_cmd; // writer
     int split_index = cmd_cpy.find_first_of("|");
     if (cmd_cpy.length() > split_index && cmd_cpy[split_index + 1] == '&') {
-        out_or_error = STDERR_FILENO;
-        grandson_cmd = _trim(cmd_cpy.substr(split_index + 1));
+        out_or_err = STDERR_FILENO; // STDERR_FILENO=2
+        first_cmd = _trim(cmd_cpy.substr(split_index + 1));
     }
     else {
-        grandson_cmd = _trim(cmd_cpy.substr(split_index));
+        first_cmd = _trim(cmd_cpy.substr(split_index));
     }
-    string son_cmd = _trim(cmd_cpy.substr(0, split_index)); // reader
+    string second_cmd = _trim(cmd_cpy.substr(0, split_index)); // reader
 
-    bool is_bg = _isBackgroundComamnd(son_cmd.c_str());
+    bool is_bg = _isBackgroundComamnd(second_cmd.c_str());
 
-    int pid_son = fork();
-    if (pid_son == -1) {
+    int fd[2];
+    if (pipe(fd) == -1) { // TODO check if really need to be check
+        perror(""); // or cout << "smash.... pipe fail..."...
+        exit(0);
+    }
+
+    int pid_first = fork();
+    if (pid_first == -1) {
         perror(""); // or cout << "smash.... fork fail..."...
         return;
     }
-    else if (pid_son == 0) { // son. reader
-        int fd[2];
-        if (pipe(fd) == -1) { // TODO
-            perror(""); // or cout << "smash.... pipe fail..."...
-            exit(0);
-        }
-
-
-        int pid_grandson = fork();
-
-        if (pid_grandson == -1) {
-            perror(""); // or cout << "smash.... fork fail..."...
-            exit(0);
-        }
-        else if (pid_grandson == 0) { // grandson. writer
-            dup2(fd[0],STDIN_FILENO);
-            close(fd[0]);
-            close(fd[1]);
-            smash.executeCommand(grandson_cmd.c_str());
-        }
-        else { // son. reader
-            dup2(fd[1],out_or_error);
-            close(fd[0]);
-            close(fd[1]);
-            smash.executeCommand(son_cmd.c_str());
-        }
+    else if (pid_first > 0) {
+        cout << "??????" << endl; //TODO
+    }
+    else if (pid_first == 0) {
+        dup2(fd[0], 0);
         close(fd[0]);
         close(fd[1]);
+        smash.executeCommand(first_cmd.c_str());
         exit(0);
+    }
 
+    int pid_second = fork();
+    if (pid_second == -1) {
+        perror(""); // or cout << "smash.... fork fail..."...
+        return;
     }
-    else { // father. smash
-        if (is_bg) { // TODO
-            smash.jb.addJob(*this, RUNNING, pid_son);
-        }
-        else {
-            smash.setcurrentPid(pid_son);
-            smash.setcurrentCmd(cmd_line);
-            if (waitpid(pid_son,NULL,WUNTRACED) == -1) {
-                perror("");
-            }
-            smash.setcurrentPid(-1);
-        }
+    else if (pid_second > 0) {
+        cout << "??????" << endl; //TODO
     }
+    else if (pid_second == 0) {
+        dup2(fd[1], 1);
+        close(fd[0]);
+        close(fd[1]);
+        smash.executeCommand(second_cmd.c_str());
+        exit(0);
+    }
+    close(fd[0]);
+    close(fd[1]);
+
 
 }
+
+
+//void PipeCommand::execute2() {
+//    //// smash fork son fork grandson
+//    //// son - reader, grandson - writer
+//    bool out_or_error = STDOUT_FILENO;
+//    string cmd_cpy = string(cmd_line);
+//    string grandson_cmd; // writer
+//    int split_index = cmd_cpy.find_first_of("|");
+//    if (cmd_cpy.length() > split_index && cmd_cpy[split_index + 1] == '&') {
+//        out_or_error = STDERR_FILENO;
+//        grandson_cmd = _trim(cmd_cpy.substr(split_index + 1));
+//    }
+//    else {
+//        grandson_cmd = _trim(cmd_cpy.substr(split_index));
+//    }
+//    string son_cmd = _trim(cmd_cpy.substr(0, split_index)); // reader
+//
+//    bool is_bg = _isBackgroundComamnd(son_cmd.c_str());
+//
+//    int pid_son = fork();
+//    if (pid_son == -1) {
+//        perror(""); // or cout << "smash.... fork fail..."...
+//        return;
+//    }
+//    else if (pid_son == 0) { // son. reader
+//        int fd[2];
+//        if (pipe(fd) == -1) { // TODO
+//            perror(""); // or cout << "smash.... pipe fail..."...
+//            exit(0);
+//        }
+//
+//
+//        int pid_grandson = fork();
+//
+//        if (pid_grandson == -1) {
+//            perror(""); // or cout << "smash.... fork fail..."...
+//            exit(0);
+//        }
+//        else if (pid_grandson == 0) { // grandson. writer
+//            dup2(fd[0],STDIN_FILENO);
+//            close(fd[0]);
+//            close(fd[1]);
+//            smash.executeCommand(grandson_cmd.c_str());
+//        }
+//        else { // son. reader
+//            dup2(fd[1],out_or_error);
+//            close(fd[0]);
+//            close(fd[1]);
+//            smash.executeCommand(son_cmd.c_str());
+//        }
+//        close(fd[0]);
+//        close(fd[1]);
+//        exit(0);
+//
+//    }
+//    else { // father. smash
+//        if (is_bg) { // TODO
+//            smash.jb.addJob(*this, RUNNING, pid_son);
+//        }
+//        else {
+//            smash.setcurrentPid(pid_son);
+//            smash.setcurrentCmd(cmd_line);
+//            if (waitpid(pid_son,NULL,WUNTRACED) == -1) {
+//                perror("");
+//            }
+//            smash.setcurrentPid(-1);
+//        }
+//    }
+//
+//}
 
  /// --------------------------- smash V, Command ^ ---------------------------
 
