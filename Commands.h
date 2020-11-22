@@ -88,7 +88,12 @@ class ShowPidCommand : public BuiltInCommand {
   void execute() override;
 };
 
-
+class LSCommand : public BuiltInCommand { // i added this SH
+public:
+    LSCommand(const char* cmd_line);
+    virtual ~LSCommand() = default;
+    void execute() override;
+};
 
 
 class JobsList;

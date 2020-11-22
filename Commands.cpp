@@ -9,6 +9,8 @@
 #include <assert.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <sys/types.h>
+#include <dirent.h>
 
 extern SmallShell& smash;
 
@@ -101,7 +103,37 @@ const char *Command::getCmd() {
 
 BuiltInCommand::BuiltInCommand(const char *cmd_line) : Command(cmd_line) {};
 
+LSCommand::LSCommand(const char *cmd_line) : BuiltInCommand(cmd_line) {};
 
+void LSCommand::execute() {
+
+    char path[COMMAND_ARGS_MAX_LENGTH];
+    if (!getcwd(path, sizeof(path))) {
+        perror("");
+    }
+
+    struct dirent **names;
+
+    int len = scandir(".", &names, 0, alphasort);
+    if (len < 0) {
+        perror("");
+        return;
+    }
+    for (int i = 0; i < len; ++i) {
+        cout << names[i]->d_name << endl;
+        free(names[i]);
+    }
+    free(names);
+
+//    DIR* dir = opendir(path);
+//    dirent * file_name = readdir(dir);
+//    while (file_name) {
+//        cout << file_name->d_name << endl;
+//        file_name = readdir(dir);
+//    }
+//    closedir(dir);
+
+}
 
 
 ShowPidCommand::ShowPidCommand(const char* cmd_line) :
@@ -572,7 +604,7 @@ Command* SmallShell::CreateCommand(const char *cmd_line) {
          */
     }
     else if (cmd_s == "ls" || cmd_s == "ls&") {
-        // TODO!!!!!!
+        return new LSCommand(cmd_line);
     }
     else if (cmd_s == "showpid" || cmd_s == "showpid&") {
       return new ShowPidCommand(cmd_line);
