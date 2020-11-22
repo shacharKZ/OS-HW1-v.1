@@ -548,8 +548,14 @@ void PipeCommand::execute() {
         dup2(fd[1], 1);
         close(fd[0]);
         close(fd[1]);
-        smash.executeCommand(first_cmd.c_str());
+        SmallShell &sm_tmp = SmallShell::getInstance();
+        sm_tmp.executeCommand(first_cmd.c_str());
+//        return;
         exit(0);
+    }
+
+    if (waitpid(pid_first,NULL,WUNTRACED) == -1) {
+        perror("");
     }
 
     int pid_second = fork();
@@ -564,7 +570,9 @@ void PipeCommand::execute() {
         dup2(fd[0], 0);
         close(fd[0]);
         close(fd[1]);
-        smash.executeCommand(second_cmd.c_str());
+        SmallShell &sm_tmp = SmallShell::getInstance();
+        sm_tmp.executeCommand(second_cmd.c_str());
+//        return;
         exit(0);
     }
     close(fd[0]);
