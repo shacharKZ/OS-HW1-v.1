@@ -543,20 +543,25 @@ void PipeCommand::execute() {
     }
     else if (pid_first > 0) {
         cout << "father got fork for first" << endl; //TODO
+        if (is_bg) {
+            smash.jb.addJob(*this, RUNNING, pid_first);
+//            cout<< "BG command was created" << endl; // TODO for debug
+        }
     }
     else if (pid_first == 0) {
         dup2(fd[1], 1);
         close(fd[0]);
         close(fd[1]);
-        SmallShell &sm_tmp = SmallShell::getInstance();
-        sm_tmp.executeCommand(first_cmd.c_str());
-//        return;
+//        SmallShell &sm_tmp = SmallShell::getInstance();
+//        sm_tmp.executeCommand(first_cmd.c_str());
+        smash.executeCommand(first_cmd.c_str());
         exit(0);
+//        return;
     }
 
-    if (waitpid(pid_first,NULL,WUNTRACED) == -1) {
-        perror("");
-    }
+//    if (waitpid(pid_first,NULL,WUNTRACED) == -1) {
+//        perror("");
+//    }
 
     int pid_second = fork();
     if (pid_second == -1) {
@@ -570,14 +575,24 @@ void PipeCommand::execute() {
         dup2(fd[0], 0);
         close(fd[0]);
         close(fd[1]);
-        SmallShell &sm_tmp = SmallShell::getInstance();
-        sm_tmp.executeCommand(second_cmd.c_str());
+//        SmallShell &sm_tmp = SmallShell::getInstance();
+//        sm_tmp.executeCommand(second_cmd.c_str());
+        smash.executeCommand(second_cmd.c_str());
+        exit(0);
 //        return;
+    }
+    if (close(fd[0]) == -1 || close(fd[1])) {
+        perror("");
+//        exit(0); // no exit. need to take care of waitpid VVV
+    }
+
+//    kill(pid_first, SIGEV_SIGNAL);
+//    kill(pid_second, SIGEV_SIGNAL);
+
+    if (waitpid(pid_first,NULL,WUNTRACED) == -1 || waitpid(pid_second,NULL,WUNTRACED) == -1) {
+        perror("");
         exit(0);
     }
-    close(fd[0]);
-    close(fd[1]);
-
 }
 
 
