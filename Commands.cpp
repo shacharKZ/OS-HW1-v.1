@@ -490,7 +490,8 @@ PipeCommand::PipeCommand(const char* cmd_line) : Command(cmd_line) {};
 void PipeCommand::execute() {
     //// smash fork first son and  fork second son
     //// first - reader, second - writer
-    bool out_or_err = STDOUT_FILENO; // STDOUT_FILENO=1
+
+    bool out_or_err = STDOUT_FILENO; // STDOUT_FILENO=1 // TODO implement
 
     string cmd_cpy = string(cmd_line);
     string first_cmd; // writer
@@ -504,7 +505,7 @@ void PipeCommand::execute() {
     }
     string second_cmd = _trim(cmd_cpy.substr(0, split_index)); // reader
 
-    bool is_bg = _isBackgroundComamnd(second_cmd.c_str());
+    bool is_bg = _isBackgroundComamnd(second_cmd.c_str()); // TODO implemnet
 
     int fd[2];
     if (pipe(fd) == -1) { // TODO check if really need to be check
@@ -518,10 +519,10 @@ void PipeCommand::execute() {
         return;
     }
     else if (pid_first > 0) {
-        cout << "??????" << endl; //TODO
+        cout << "father got fork for first" << endl; //TODO
     }
     else if (pid_first == 0) {
-        dup2(fd[0], 0);
+        dup2(fd[1], 1);
         close(fd[0]);
         close(fd[1]);
         smash.executeCommand(first_cmd.c_str());
@@ -534,10 +535,10 @@ void PipeCommand::execute() {
         return;
     }
     else if (pid_second > 0) {
-        cout << "??????" << endl; //TODO
+        cout << "father got fork for second" << endl; //TODO
     }
     else if (pid_second == 0) {
-        dup2(fd[1], 1);
+        dup2(fd[0], 0);
         close(fd[0]);
         close(fd[1]);
         smash.executeCommand(second_cmd.c_str());
@@ -545,7 +546,6 @@ void PipeCommand::execute() {
     }
     close(fd[0]);
     close(fd[1]);
-
 
 }
 
