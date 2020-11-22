@@ -98,9 +98,8 @@ public:
 
 class JobsList;
 class QuitCommand : public BuiltInCommand {
-// TODO: Add your data members public:
-  std::vector<Command> vec; // TODO this is my suggestion SH
-
+    JobsList* jobs;
+public:
   QuitCommand(const char* cmd_line, JobsList* jobs);
   virtual ~QuitCommand() {}
   void execute() override;
@@ -162,13 +161,13 @@ public:
     void addJob(const char*, Status, pid_t);
     void printJobsList();
     void removeFinishedJobs();
+    void removeJobById(int jobId);
+    void killAllJobs();
+    int getNumOfJobs();
     JobEntry *getLastStoppedJob();
     JobEntry *getLastJob();
     JobEntry * getJobById(int jobId);
-    void removeJobById(int jobId);
     //TODO continue from here - ofir
-    JobEntry * getLastJob(int* lastJobId);
-    void killAllJobs();
 
     // TODO: Add extra methods or modify exisitng ones as needed
 };

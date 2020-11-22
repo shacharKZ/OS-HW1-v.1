@@ -405,6 +405,29 @@ void BackgroundCommand::execute() {
 
 
 
+// BUILT IN NUMBER #9
+
+
+QuitCommand::QuitCommand(const char *cmd_line, JobsList *jobs): BuiltInCommand(cmd_line),  jobs(jobs) {}
+
+void QuitCommand::execute() {
+  char* args[COMMAND_MAX_ARGS + 1];
+  int argsNum = _parseCommandLine(cmd_line, args);
+
+  // TODO check quit blabla kill
+  for (int i=1; i < argsNum; i++) {
+    if (strcmp(args[i], "kill") == 0) {
+      cout << "sending SIGKILL signal to " << jobs->getNumOfJobs() << " jobs:" << endl;
+      jobs->killAllJobs();
+      break;
+    }
+  }
+  exit(0);
+}
+
+
+
+
 RedirectionCommand::RedirectionCommand (const char* cmd_line) : Command(cmd_line) {};
 
 void RedirectionCommand::execute() {
@@ -622,6 +645,15 @@ Command* SmallShell::CreateCommand(const char *cmd_line) {
     else if (cmd_s == "fg" || cmd_s == "fg&") {
         return new ForegroundCommand(cmd_line, &jb) ;
     }
+
+    else if (cmd_s == "bg" || cmd_s == "bg&") {
+      return new BackgroundCommand(cmd_line, &jb) ;
+    }
+
+    else if (cmd_s == "quit" || cmd_s == "quit&") {
+      return new QuitCommand(cmd_line, &jb) ;
+    }
+
     else if (cmd_s == "kill" || cmd_s == "kill&") {
         if (args_num != 3 || args[1][0] != '-') {
             cerr << "smash error: kill: invalid arguments" << endl;
@@ -854,8 +886,17 @@ void JobsList::removeJobById(int jobId) {
       return;
     }
   }
-
   //TODO remove it before done, for debug
   cout << "no job with id: " << jobId << "found" << endl;
 }
 
+void JobsList::killAllJobs() {
+  for(auto job = jobs.begin(); job != jobs.end(); ++job){
+    cout <<  job->getPid() << ": " << job->getCmd() <<  endl;
+    kill(job->getPid(), SIGKILL);
+  }
+}
+
+int JobsList::getNumOfJobs() {
+  return jobs.size();
+}
