@@ -321,7 +321,7 @@ void ForegroundCommand::execute() {
   }
 
   else {
-    cout << "smash error: fg: invalid arguments";
+    cout << "smash error: fg: invalid arguments" << endl;
     return;
   }
 
