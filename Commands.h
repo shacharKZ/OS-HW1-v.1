@@ -205,6 +205,17 @@ class BackgroundCommand : public BuiltInCommand {
     void execute() override;
 };
 
+class CpCommand : public BuiltInCommand {
+    JobsList* jobs;
+
+public:
+    CpCommand(const char* cmd_line, JobsList* jobs);
+    virtual ~CpCommand() {}
+    void execute() override;
+};
+
+
+
 /* -------------------------------------------------
  *            Small Shell
 --------------------------------------------------- */

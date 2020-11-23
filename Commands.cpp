@@ -216,7 +216,14 @@ void ExternalCommand::execute() {
         perror(""); // or cout << "smash.... fork fail..."...
     }
     else if (pid == 0) {// son. the new forked proc
-        char cmd_cpy[COMMAND_ARGS_MAX_LENGTH];
+
+      if(setpgrp() == -1) {
+        perror("setpgrp failed");
+        exit(0);
+      }
+
+
+      char cmd_cpy[COMMAND_ARGS_MAX_LENGTH];
         strcpy(cmd_cpy,cmd_line);
         _removeBackgroundSign(cmd_cpy);
         const char *proc_args[] = {"/bin/bash", "-c" , cmd_cpy, nullptr};
@@ -229,7 +236,6 @@ void ExternalCommand::execute() {
 //        smash.jb.addJob(*this, RUNNING, pid); // TODO should also non "&" be added to jb?
         if (is_bg) {
             smash.jb.addJob(*this, RUNNING, pid);
-//            cout<< "BG command was created" << endl; // TODO for debug
         }
         else {
             smash.setcurrentPid(pid);
@@ -431,6 +437,121 @@ void QuitCommand::execute() {
   }
   exit(0);
 }
+
+
+// BUILT IN NUMBER #10
+CpCommand::CpCommand(const char *cmd_line, JobsList* jobs): BuiltInCommand(cmd_line),  jobs(jobs) {}
+
+void CpCommand::execute() {
+
+
+  pid_t pid = fork();
+  if (pid == -1) {
+    perror("");
+  }
+
+  else if (pid == 0) {// son. the new forked proc
+
+    if(setpgrp() == -1) {
+      perror("setpgrp failed");
+      exit(0);
+    }
+
+    char* args[COMMAND_MAX_ARGS + 1];
+    char cmd_cpy[COMMAND_ARGS_MAX_LENGTH];
+    char fullDest[COMMAND_ARGS_MAX_LENGTH*3];
+    char fullSrc[COMMAND_ARGS_MAX_LENGTH*3];
+    int BUFFER_SIZE = 1024;
+    char buffer[BUFFER_SIZE];
+
+    strcpy(cmd_cpy,cmd_line);
+    _removeBackgroundSign(cmd_cpy);
+    int argsNum = _parseCommandLine(cmd_cpy, args);
+
+    if (argsNum != 3) {
+      // TODO should we print error?
+      exit(0);
+    }
+
+    realpath(args[1], fullSrc);
+    realpath(args[2], fullDest);
+
+
+    // more info about linux command on files can be found here:
+    //https://linux.die.net/man/3/open
+
+
+    //opening src
+    int srcFile=open(fullSrc,O_RDONLY, 0666);
+    if(srcFile == -1) {
+      perror("smash error: open failed");
+      return;
+    }
+
+
+    // opening dest
+    int destFile=open(fullDest,(O_WRONLY|O_CREAT|O_TRUNC), 0666);
+    if(destFile == -1) {
+      perror("smash error: open failed");
+      close(srcFile);
+      return;
+    }
+
+    std::size_t readSize = BUFFER_SIZE; // so will step into while
+    std::size_t writeSize;
+
+    while(readSize == BUFFER_SIZE) {
+      readSize = read(srcFile, buffer, BUFFER_SIZE);
+      if (readSize == -1) {
+        perror("smash error: read failed");
+        close(srcFile);
+        close(destFile);
+        return;
+      }
+
+      writeSize = write(destFile, buffer, BUFFER_SIZE);
+      if (writeSize == -1) {
+        cout << "write size: " <<  writeSize << " read size " << readSize << endl;
+        cout << buffer << endl;
+        perror("smash error: write failed");
+        close(srcFile);
+        close(destFile);
+        return;
+      }
+    }
+
+    cout << "smash: " << args[1] << " was copied to " << args[2] << endl;
+    close(srcFile);
+    close(destFile);
+    return;
+
+
+
+
+
+
+
+
+
+  }
+  else { // father. original proc
+
+    bool is_bg = _isBackgroundComamnd(cmd_line);
+
+    if (is_bg) {
+      smash.jb.addJob(*this, RUNNING, pid);
+    }
+    else {
+      smash.setcurrentPid(pid);
+      smash.setcurrentCmd(cmd_line);
+      if (waitpid(pid,NULL,WUNTRACED) == -1) {
+        perror("");
+      }
+      smash.setcurrentPid(-1);
+    }
+  }
+}
+
 
 
 
@@ -666,6 +787,12 @@ Command* SmallShell::CreateCommand(const char *cmd_line) {
     else if (cmd_s == "quit" || cmd_s == "quit&") {
       return new QuitCommand(cmd_line, &jb) ;
     }
+
+
+    else if (cmd_s == "cp" || cmd_s == "cp&") {
+      return new CpCommand(cmd_line, &jb) ;
+    }
+
 
     else if (cmd_s == "kill" || cmd_s == "kill&") {
         if (args_num != 3 || args[1][0] != '-') {
