@@ -636,6 +636,7 @@ void PipeCommand::execute() {
     //// first - reader, second - writer
 
     int out_or_err = STDOUT_FILENO; // STDOUT_FILENO=1 // TODO implement
+    bool is_bg = _isBackgroundComamnd(cmd_line);
 
     string cmd_cpy = string(cmd_line);
     string second_cmd; // writer
@@ -650,11 +651,14 @@ void PipeCommand::execute() {
     string first_cmd = _trim(cmd_cpy.substr(0, split_index)); // reader
 
 //    if (first_cmd.find_first_of("|") != -1 || second_cmd.find_first_of("|") != -1) {
-//        cout << "smash error: pipe: invalid arguments: pipe inside pipe" << endl; // TODO double check
+//        cout << "smash error: pipe: invalid arguments: pipe inside pipe" << endl;
 //        return;
-//    }
+//    } // TODO double check this case. pipe inside a pipe
 
-    bool is_bg = _isBackgroundComamnd(second_cmd.c_str()); // TODO implement...
+    int idx = second_cmd.find_last_not_of(WHITESPACE);
+    if (idx != string::npos && second_cmd[idx] == '&') {
+        second_cmd[idx] = ' ';
+    }
 
     int fd[2];
     if (pipe(fd) == -1) { // TODO check if really need to be check
@@ -666,11 +670,6 @@ void PipeCommand::execute() {
     if (pid_first == -1) {
         perror(""); // or cout << "smash.... fork fail..."...
         return;
-    }
-    else if (pid_first > 0) {
-        if (is_bg) {
-            smash.jb.addJob(*this, RUNNING, pid_first); // TODO
-        }
     }
     else if (pid_first == 0) {
         dup2(fd[1], out_or_err);
@@ -685,9 +684,6 @@ void PipeCommand::execute() {
         perror(""); // or cout << "smash.... fork fail..."...
         return;
     }
-    else if (pid_second > 0) {
-        // TODO
-    }
     else if (pid_second == 0) {
         dup2(fd[0], 0);
         close(fd[0]);
@@ -697,19 +693,47 @@ void PipeCommand::execute() {
     }
     if (close(fd[0]) == -1 || close(fd[1])) {
         perror("");
-//        exit(0); // no exit. need to take care of waitpid VVV
+        exit(0);
     }
 
-    if (waitpid(pid_first,NULL,WUNTRACED) == -1 || waitpid(pid_second,NULL,WUNTRACED) == -1) {
-        perror("");
-        exit(0);
+    if (is_bg) {
+        // this is not clear if we need to add the first proc pid or the second proc...
+        // in reception hour David told that because they did not mention a specific rule for it - any option will be accepted
+        smash.jb.addJob(*this, RUNNING, pid_first);
+    }
+    else {
+        smash.setcurrentPid(pid_first);
+        smash.setcurrentCmd(cmd_line);
+        if (waitpid(pid_first,NULL,WUNTRACED) == -1 || waitpid(pid_second,NULL,WUNTRACED) == -1) {
+            perror("");
+            exit(0);
+        }
+        smash.setcurrentPid(-1);
     }
 }
 
 
+TimeoutCommand::TimeoutCommand(const char* cmd_line) : Command(cmd_line) {};
+
+void TimeoutCommand::execute() {
+
+    string full_cmd = _trim(string(cmd_line));
+    char* args[COMMAND_MAX_ARGS];
+    int args_num = _parseCommandLine(cmd_line, args);
+    int sec = Utils::strToInt(args[1]);
+    int idx = full_cmd.find_first_of((args[1]));
+    if (sec == -1 || idx == -1 || idx+string(args[1]).length()+1 >= full_cmd.length()) {
+        cout << "smash error: TimeoutCommand: : invalid arguments" << endl;
+    }
+    string cmd_to_run = _trim(full_cmd.substr(idx+string(args[1]).length()));
+
+
+
+}
+
  /// --------------------------- smash V, Command ^ ---------------------------
 
-SmallShell::SmallShell() : name("smash"), last_pwd(""), jb(){
+SmallShell::SmallShell() : name("smash"), last_pwd(""), jb(), time_jb(){
 // TODO: add your implementation
 }
 
@@ -744,8 +768,6 @@ Command* SmallShell::CreateCommand(const char *cmd_line) {
     int args_num = _parseCommandLine(cmd_line, args);
     string cmd_s = string(args[0]);
 
-    // TODO redirect creation of command for different proposes, like pipe\io SH
-
     if (cmd_s == "chprompt" || cmd_s == "chprompt&") {
         string name_to_set;
         if (args_num>1) name_to_set = string(args[1]);
@@ -775,25 +797,18 @@ Command* SmallShell::CreateCommand(const char *cmd_line) {
     else if (cmd_s == "jobs" || cmd_s == "jobs&") {
         jb.printJobsList();
     }
-
     else if (cmd_s == "fg" || cmd_s == "fg&") {
         return new ForegroundCommand(cmd_line, &jb) ;
     }
-
     else if (cmd_s == "bg" || cmd_s == "bg&") {
       return new BackgroundCommand(cmd_line, &jb) ;
     }
-
     else if (cmd_s == "quit" || cmd_s == "quit&") {
       return new QuitCommand(cmd_line, &jb) ;
     }
-
-
     else if (cmd_s == "cp" || cmd_s == "cp&") {
       return new CpCommand(cmd_line, &jb) ;
     }
-
-
     else if (cmd_s == "kill" || cmd_s == "kill&") {
         if (args_num != 3 || args[1][0] != '-') {
             cerr << "smash error: kill: invalid arguments" << endl;
@@ -801,6 +816,9 @@ Command* SmallShell::CreateCommand(const char *cmd_line) {
         else {
             return new KillCommand(cmd_line);
         }
+    }
+    else if (cmd_s == "timeout") {
+        return new TimeoutCommand(cmd_line) ;
     }
     else {
         return new ExternalCommand(cmd_line);
@@ -986,9 +1004,6 @@ void JobsList::removeFinishedJobs(){
 void JobsList:: printJobsList(){
   for(auto job = jobs.begin(); job != jobs.end(); ++job){
     cout << "[" << job->getId()<< "] " << job->getCmd() << " : " << job->getPid() << " " << difftime(time(0), job->getStartTime()) << endl;
-
-    //TODO DEBUG
-    cout << "status is: " << job->getStatus() << endl;
   }
 }
 

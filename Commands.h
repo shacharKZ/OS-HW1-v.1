@@ -40,6 +40,13 @@ protected:
   virtual ~BuiltInCommand() = default;
 };
 
+class TimeoutCommand : public Command {
+public:
+    TimeoutCommand(const char* cmd_line);
+    virtual ~TimeoutCommand()  = default;
+    void execute() override;
+};
+
 class ExternalCommand : public Command {
  public:
   ExternalCommand(const char* cmd_line);
@@ -228,6 +235,7 @@ class SmallShell {
 public:
   // fields
   JobsList jb;
+  JobsList time_jb;
   string last_pwd;
 
   // Constructors
