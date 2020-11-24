@@ -264,8 +264,8 @@ void KillCommand::execute() {
         return;
     }
     int tmp_index = s_tmp.find_first_of(' ');
-    int proc_id = Utils::strToInt(s_tmp.substr(1, tmp_index-1));
-    int sig_num = Utils::strToInt(s_tmp.substr(tmp_index+1, s_tmp.length()));
+    int sig_num = Utils::strToInt(s_tmp.substr(1, tmp_index-1));
+    int proc_id = Utils::strToInt(s_tmp.substr(tmp_index+1, s_tmp.length()));
 
     if (proc_id == -1 || sig_num == -1) {
         cerr << "smash error: kill: invalid arguments" << endl;
