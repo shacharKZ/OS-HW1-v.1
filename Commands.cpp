@@ -12,6 +12,7 @@
 //#include <sys/types.h>
 #include <dirent.h>
 #include <algorithm>
+#include <map>
 
 extern SmallShell& smash;
 
@@ -223,7 +224,7 @@ void ExternalCommand::execute() {
       }
 
 
-      char cmd_cpy[COMMAND_ARGS_MAX_LENGTH];
+        char cmd_cpy[COMMAND_ARGS_MAX_LENGTH];
         strcpy(cmd_cpy,cmd_line);
         _removeBackgroundSign(cmd_cpy);
         const char *proc_args[] = {"/bin/bash", "-c" , cmd_cpy, nullptr};
@@ -713,18 +714,24 @@ void PipeCommand::execute() {
 }
 
 static void catchTimeOut(int signum) {
-    cout << "catch timeout sig... this is for testing only" << endl;
     cout << "smash: got an alarm" << endl;
     pid_t pid = getpid();
-    JobsList::JobEntry * proc = smash.time_jb.getJobByPid(pid);
-    if (!proc) {
-        cout << "smash: timeoutCommand error: process has already been deleted" << endl;
-        exit(0);
+    time_t now = time(nullptr);
+    for (auto x : smash.time_jb) {
+        if (now >= x.first) {
+            cout << x.second << " time out!" << endl;
+            smash.time_jb.erase(x.first);
+        }
     }
-    cout << proc->getCmd() << " time out!" << endl;
-    smash.time_jb.removeJobById(proc->getId());
-//    smash.jb.removeJobById(proc->getId()); // useless
-    exit(0);
+
+//    JobsList::JobEntry * proc = smash.time_jb.getJobByPid(pid);
+//    if (!proc) {
+//        cout << "smash: timeoutCommand error: process has already been deleted" << endl;
+//        exit(0);
+//    }
+//    cout << proc->getCmd() << " time out!" << endl;
+//    smash.time_jb.removeJobById(proc->getId());
+////    smash.jb.removeJobById(proc->getId()); // useless
 }
 
 static bool isExternalCommand(string cmd) {
@@ -737,6 +744,8 @@ TimeoutCommand::TimeoutCommand(const char* cmd_line) : Command(cmd_line) {};
 void TimeoutCommand::execute() {
 
     string full_cmd = _trim(string(cmd_line));
+    bool is_bg = _isBackgroundComamnd(cmd_line);
+
     char* args[COMMAND_MAX_ARGS];
     int args_num = _parseCommandLine(cmd_line, args);
     int sec = Utils::strToInt(args[1]);
@@ -749,10 +758,8 @@ void TimeoutCommand::execute() {
     signal(SIGALRM, catchTimeOut);
     time_t now = time(nullptr);
 
-    bool is_bg = _isBackgroundComamnd(cmd_to_run.c_str());
-    JobsList::JobEntry * last_ = smash.jb.getLastJob();
-    smash.executeCommand(cmd_to_run.c_str());
 
+    JobsList::JobEntry * last_ = smash.jb.getLastJob();
     if (!isExternalCommand(cmd_to_run)) {
         cout << "what to do with built in command who gets timeout?? right now - nothing..." << endl; // TODO
         smash.executeCommand(cmd_to_run.c_str());
@@ -763,14 +770,23 @@ void TimeoutCommand::execute() {
             // TODO
         }
         else if (pid == 0) {
-            setpgrp(); // TODO
-            smash.executeCommand(cmd_to_run.c_str());
-            exit(0);
+            if(setpgrp() == -1) {
+                perror("setpgrp failed");
+                exit(0);
+            }
+            char cmd_cpy[COMMAND_ARGS_MAX_LENGTH];
+            strcpy(cmd_cpy,cmd_to_run.c_str());
+            _removeBackgroundSign(cmd_cpy);
+            const char *proc_args[] = {"/bin/bash", "-c" , cmd_cpy, nullptr};
+            if (execv("/bin/bash", (char * const*) proc_args) == -1) {
+                perror("");
+                exit(0);
+            }
         }
         else {
-            smash.time_jb.addJob(cmd_to_run.c_str(), RUNNING, pid);
+            smash.time_jb.insert(pair<int,string>(now+sec, cmd_to_run));
             smash.jb.addJob(cmd_to_run.c_str(), RUNNING, pid);
-            alarm((int)difftime(pid,now+sec));
+            alarm(sec);
 
             smash.setcurrentPid(pid);
             smash.setcurrentCmd(cmd_line);

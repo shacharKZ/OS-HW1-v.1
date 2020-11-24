@@ -2,6 +2,7 @@
 #define SMASH_COMMAND_H_
 
 #include <vector>
+#include <map>
 #include <cctype>
 
 using namespace std;
@@ -236,7 +237,7 @@ class SmallShell {
 public:
   // fields
   JobsList jb;
-  JobsList time_jb;
+  map<pid_t,string> time_jb;
   string last_pwd;
 
   // Constructors
