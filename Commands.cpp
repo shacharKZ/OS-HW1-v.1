@@ -12,7 +12,6 @@
 //#include <sys/types.h>
 #include <dirent.h>
 #include <algorithm>
-#include <map>
 
 extern SmallShell& smash;
 
@@ -94,6 +93,31 @@ void _removeBackgroundSign(char* cmd_line) {
 
 /// --------------------------- From here down is here our code---------------------------
 // TODO: Add your implementation for classes in Commands.h
+
+
+
+static void catchTimeOut(int signum) {
+
+    cout << "smash: got an alarm" << endl;
+    time_t now = time(nullptr);
+
+    auto it = smash.time_jb.begin();
+    while (it < smash.time_jb.end()) {
+        if(it->first <= now) {
+            pid_t pid = it->second.second;
+            cout << it->second.first << " time out!" << endl;
+            smash.time_jb.erase(it++);
+            kill(pid,SIGKILL);
+        }
+        else {
+            ++it;
+        }
+    }
+}
+
+
+
+
 
 // command class
 Command::Command(const char *cmd_line) : cmd_line(cmd_line) {};
@@ -279,10 +303,16 @@ void KillCommand::execute() {
 
     pid_t pid = je->getPid();
 //    assert(waitpid(pid,NULL,WNOHANG)==0); // TODO if pass this section so pid is a real proc in prog SH
+    if (sig_num == SIGALRM) {
+        signal(SIGALRM, SIG_DFL); // because of timeoutCommand
+    }
     int flag = kill(pid, sig_num); // TODO the usless arg use for debug. before finish just put it inside the if check SH
     if (flag == -1) {
         perror("");
         return;
+    }
+    if (sig_num == SIGALRM) {
+        signal(SIGALRM, catchTimeOut); // because of timeoutCommand
     }
     cout << "signal number " << sig_num << " was sent to pid " << pid << endl;
 }
@@ -713,26 +743,6 @@ void PipeCommand::execute() {
     }
 }
 
-static void catchTimeOut(int signum) {
-    cout << "smash: got an alarm" << endl;
-    pid_t pid = getpid();
-    time_t now = time(nullptr);
-    for (auto x : smash.time_jb) {
-        if (now >= x.first) {
-            cout << x.second << " time out!" << endl;
-            smash.time_jb.erase(x.first);
-        }
-    }
-
-//    JobsList::JobEntry * proc = smash.time_jb.getJobByPid(pid);
-//    if (!proc) {
-//        cout << "smash: timeoutCommand error: process has already been deleted" << endl;
-//        exit(0);
-//    }
-//    cout << proc->getCmd() << " time out!" << endl;
-//    smash.time_jb.removeJobById(proc->getId());
-////    smash.jb.removeJobById(proc->getId()); // useless
-}
 
 static bool isExternalCommand(string cmd) {
     // TODO imp
@@ -784,16 +794,17 @@ void TimeoutCommand::execute() {
             }
         }
         else {
-            smash.time_jb.insert(pair<int,string>(now+sec, cmd_to_run));
+            smash.time_jb.push_back(pair<int,pair<string, int>>(now+sec, pair<string, int>(cmd_to_run, pid)));
             smash.jb.addJob(cmd_to_run.c_str(), RUNNING, pid);
             alarm(sec);
-
-            smash.setcurrentPid(pid);
-            smash.setcurrentCmd(cmd_line);
-            if (waitpid(pid,NULL,WUNTRACED) == -1) {
-                perror("");
+            if(!is_bg) {
+                smash.setcurrentPid(pid);
+                smash.setcurrentCmd(cmd_line);
+                if (waitpid(pid,NULL,WUNTRACED) == -1) {
+                    perror("");
+                }
+                smash.setcurrentPid(-1);
             }
-            smash.setcurrentPid(-1);
         }
     }
 
