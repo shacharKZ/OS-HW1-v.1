@@ -12,6 +12,7 @@
 //#include <sys/types.h>
 #include <dirent.h>
 #include <algorithm>
+#include "signals.h"
 
 extern SmallShell& smash;
 
@@ -92,26 +93,6 @@ void _removeBackgroundSign(char* cmd_line) {
 }
 
 /// --------------------------- From here down is here our code---------------------------
-
-
-//static void catchTimeOut(int signum) {
-//
-//    cout << "smash: got an alarm" << endl;
-//    time_t now = time(nullptr);
-//
-//    auto it = smash.time_jb.begin();
-//    while (it < smash.time_jb.end()) {
-//        if(it->first <= now) {
-//            pid_t pid = it->second.second;
-//            cout << it->second.first << " time out!" << endl;
-//            smash.time_jb.erase(it++);
-//            kill(pid,SIGKILL);
-//        }
-//        else {
-//            ++it;
-//        }
-//    }
-//}
 
 
 
@@ -297,16 +278,18 @@ void KillCommand::execute() {
     }
 
     pid_t pid = je->getPid();
-//    if (sig_num == SIGALRM) { // TODO we need to speak about that...
-//        signal(SIGALRM, SIG_DFL); // because of timeoutCommand
-//    }
-    if (kill(pid, sig_num) == -1) {
+    if (sig_num == SIGALRM) { // TODO we need to speak about that...
+        signal(SIGALRM, SIG_DFL); // because of timeoutCommand
+    }
+    bool flag = kill(pid, sig_num) == -1;
+    if (sig_num == SIGALRM) {
+        signal(SIGALRM, alarmHandler); // because of timeoutCommand
+    }
+    if (flag) {
         perror("smash error: kill failed");
         return;
     }
-//    if (sig_num == SIGALRM) {
-//        signal(SIGALRM, catchTimeOut); // because of timeoutCommand
-//    }
+
     cout << "signal number " << sig_num << " was sent to pid " << pid << endl;
 }
 
@@ -653,7 +636,144 @@ void RedirectionCommand::execute() {
     }
 }
 
+static bool isExternalCommand(string cmd) {
+    char* args[COMMAND_MAX_ARGS];
+    int args_num = _parseCommandLine(cmd.c_str(), args);
+    string cmd_s = string(args[0]);
+
+    if (cmd_s == "chprompt" || cmd_s == "ls" || cmd_s == "pwd" || cmd_s == "cd" ||
+        cmd_s == "jobs" || cmd_s == "fg" || cmd_s == "bg" || cmd_s == "quit" ||
+        cmd_s == "cp" || cmd_s == "kill") {
+        return false;
+    }
+    return true;
+}
+
 PipeCommand::PipeCommand(const char* cmd_line) : Command(cmd_line) {};
+
+//void PipeCommand::execute() { // TODO
+//    //// smash fork first son and  fork second son
+//    //// first - reader, second - writer
+//
+//    int out_or_err = STDOUT_FILENO; // STDOUT_FILENO=1
+//    bool is_bg = _isBackgroundComamnd(cmd_line);
+//
+//    string cmd_cpy = string(cmd_line);
+//    string second_cmd; // writer
+//    int split_index = cmd_cpy.find_first_of("|");
+//    if (cmd_cpy.length() > split_index && cmd_cpy[split_index + 1] == '&') {
+//        out_or_err = STDERR_FILENO; // STDERR_FILENO=2
+//        second_cmd = _trim(cmd_cpy.substr(split_index + 2));
+//    }
+//    else {
+//        second_cmd = _trim(cmd_cpy.substr(split_index+1));
+//    }
+//    string first_cmd = _trim(cmd_cpy.substr(0, split_index)); // reader
+//
+////    if (first_cmd.find_first_of("|") != -1 || second_cmd.find_first_of("|") != -1) {
+////        cout << "smash error: pipe: invalid arguments: pipe inside pipe" << endl;
+////        return;
+////    } // TODO double check this case. pipe inside a pipe case... not sure if needed or not
+//
+//    int idx = second_cmd.find_last_not_of(WHITESPACE);
+//    if (idx != string::npos && second_cmd[idx] == '&') {
+//        second_cmd[idx] = ' ';
+//    }
+//
+//    int fd[2];
+//    if (pipe(fd) == -1) {
+//        perror("smash error: pipe failed");
+//        exit(0);
+//    }
+//
+//    int pid_first = 0, pid_second = 0;
+//    bool flag_first_external = isExternalCommand(first_cmd);
+//    if (!flag_first_external) {
+//        dup2(fd[1], out_or_err);
+//        close(fd[0]);
+//        close(fd[1]);
+//        smash.executeCommand(first_cmd.c_str());
+//    }
+//    else {
+//        pid_first = fork();
+//        if (pid_first == -1) {
+//            perror("smash error: fork failed");
+//            return;
+//        }
+//        else if (pid_first == 0) { // TODO there is a trick here we need to speak about...
+//            dup2(fd[1], out_or_err);
+//            close(fd[0]);
+//            close(fd[1]);
+//
+//            char cmd_cpy1[COMMAND_ARGS_MAX_LENGTH];
+//            strcpy(cmd_cpy1,first_cmd.c_str());
+//            _removeBackgroundSign(cmd_cpy1);
+//            const char *proc_args[] = {"/bin/bash", "-c" , cmd_cpy1, nullptr};
+//            if (execv("/bin/bash", (char * const*) proc_args) == -1) {
+//                perror("smash error: execv failed");
+//                exit(0);
+//            }
+//        }
+//    }
+//
+//    bool flag_second_external = isExternalCommand(second_cmd);
+//    if (0) {
+//        dup2(fd[0], 0);
+//        close(fd[0]);
+//        close(fd[1]);
+//        smash.executeCommand(second_cmd.c_str());
+//    }
+//    else {
+//        pid_second = fork();
+//        if (pid_second == -1) {
+//            perror("smash error: fork failed");
+//            return;
+//        }
+//        else if (pid_second == 0) {
+//            dup2(fd[0], 0);
+//            close(fd[0]);
+//            close(fd[1]);
+//
+//            char cmd_cpy2[COMMAND_ARGS_MAX_LENGTH];
+//            strcpy(cmd_cpy2,second_cmd.c_str());
+//            _removeBackgroundSign(cmd_cpy2);
+//            const char *proc_args[] = {"/bin/bash", "-c" , cmd_cpy2, nullptr};
+//            if (execv("/bin/bash", (char * const*) proc_args) == -1) {
+//                perror("smash error: execv failed");
+//                exit(0);
+//            }
+//        }
+//        if (close(fd[0]) == -1 || close(fd[1])) {
+//            perror("smash error: close failed");
+//            exit(0);
+//        }
+//    }
+//
+//    if (is_bg && (flag_first_external || flag_second_external)) {
+//        // this is not clear if we need to add the first proc pid or the second proc...
+//        // in reception hour David told that because they did not mention a specific rule for it - any option will be accepted
+//
+//        if (flag_first_external) {
+//            smash.jb.addJob(*this, RUNNING, pid_first);
+//        }
+//        else if (flag_second_external) {
+//            smash.jb.addJob(*this, RUNNING, pid_second);
+//        }
+//
+//    }
+//    else if (!is_bg) {
+//        smash.setcurrentPid(pid_first);
+//        smash.setcurrentCmd(cmd_line);
+//        if (waitpid(pid_first,NULL,WUNTRACED) == -1 || waitpid(pid_second,NULL,WUNTRACED) == -1) {
+//            perror("smash error: waitpid failed");
+//            exit(0);
+//        }
+//        smash.setcurrentPid(-1);
+//    }
+//}
+
+
+
 
 void PipeCommand::execute() {
     //// smash fork first son and  fork second son
@@ -736,19 +856,6 @@ void PipeCommand::execute() {
     }
 }
 
-
-static bool isExternalCommand(string cmd) {
-    char* args[COMMAND_MAX_ARGS];
-    int args_num = _parseCommandLine(cmd.c_str(), args);
-    string cmd_s = string(args[0]);
-
-    if (cmd_s == "chprompt" || cmd_s == "ls" || cmd_s == "pwd" || cmd_s == "cd" ||
-            cmd_s == "jobs" || cmd_s == "fg" || cmd_s == "bg" || cmd_s == "quit" ||
-            cmd_s == "cp" || cmd_s == "kill") {
-        return false;
-    }
-    return true;
-}
 
 TimeoutCommand::TimeoutCommand(const char* cmd_line) : Command(cmd_line) {};
 
@@ -1019,7 +1126,7 @@ void JobsList::removeFinishedJobs(){
             jobs.erase(it++);
         }
         else if (res == -1) {
-            perror("smash error: waitpid failed"); // something went wrong if we got here
+//            perror("smash error: waitpid failed"); // happends when erase timeout commands
             jobs.erase(it++);
         }
         else {
