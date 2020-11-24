@@ -34,7 +34,6 @@ protected:
 
 class BuiltInCommand : public Command {
 protected:
-//    const char* cmd_line; // TODO WTF?? SH
  public:
   BuiltInCommand(const char* cmd_line);
   virtual ~BuiltInCommand() = default;
@@ -147,7 +146,6 @@ public:
         JobEntry(Command*, time_t, Status, int id, int pid);
         JobEntry(const char*, time_t, Status, int id, int pid);
         JobEntry () = delete;
-//      JobEntry(JobEntry&) = delete ; // TODO in // for dibugging SH
         pid_t getPid();
         time_t getStartTime();
         Status getStatus();
@@ -177,7 +175,6 @@ public:
     JobEntry * getJobByPid(pid_t pid);
     //TODO continue from here - ofir
 
-    // TODO: Add extra methods or modify exisitng ones as needed
 };
 
 

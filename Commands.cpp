@@ -92,30 +92,26 @@ void _removeBackgroundSign(char* cmd_line) {
 }
 
 /// --------------------------- From here down is here our code---------------------------
-// TODO: Add your implementation for classes in Commands.h
 
 
-
-static void catchTimeOut(int signum) {
-
-    cout << "smash: got an alarm" << endl;
-    time_t now = time(nullptr);
-
-    auto it = smash.time_jb.begin();
-    while (it < smash.time_jb.end()) {
-        if(it->first <= now) {
-            pid_t pid = it->second.second;
-            cout << it->second.first << " time out!" << endl;
-            smash.time_jb.erase(it++);
-            kill(pid,SIGKILL);
-        }
-        else {
-            ++it;
-        }
-    }
-}
-
-
+//static void catchTimeOut(int signum) {
+//
+//    cout << "smash: got an alarm" << endl;
+//    time_t now = time(nullptr);
+//
+//    auto it = smash.time_jb.begin();
+//    while (it < smash.time_jb.end()) {
+//        if(it->first <= now) {
+//            pid_t pid = it->second.second;
+//            cout << it->second.first << " time out!" << endl;
+//            smash.time_jb.erase(it++);
+//            kill(pid,SIGKILL);
+//        }
+//        else {
+//            ++it;
+//        }
+//    }
+//}
 
 
 
@@ -231,20 +227,19 @@ void GetCurrDirCommand::execute() {
 
 ExternalCommand::ExternalCommand(const char* cmd_line) : Command(cmd_line) {};
 
-
 void ExternalCommand::execute() {
 
     bool is_bg = _isBackgroundComamnd(cmd_line);
 
     pid_t pid = fork();
     if (pid == -1) {
-        perror(""); // or cout << "smash.... fork fail..."...
+        perror("smash error: fork failed");
     }
     else if (pid == 0) {// son. the new forked proc
 
       if(setpgrp() == -1) {
-        perror("setpgrp failed");
-        exit(0);
+          perror("smash error: setpgrp failed");
+          exit(0);
       }
 
 
@@ -253,7 +248,7 @@ void ExternalCommand::execute() {
         _removeBackgroundSign(cmd_cpy);
         const char *proc_args[] = {"/bin/bash", "-c" , cmd_cpy, nullptr};
         if (execv("/bin/bash", (char * const*) proc_args) == -1) {
-            perror("");
+            perror("smash error: execv failed");
             exit(0);
         }
     }
@@ -266,7 +261,7 @@ void ExternalCommand::execute() {
             smash.setcurrentPid(pid);
             smash.setcurrentCmd(cmd_line);
             if (waitpid(pid,NULL,WUNTRACED) == -1) {
-                perror("");
+                perror("smash error: waitpid failed");
             }
             smash.setcurrentPid(-1);
         }
@@ -302,18 +297,16 @@ void KillCommand::execute() {
     }
 
     pid_t pid = je->getPid();
-//    assert(waitpid(pid,NULL,WNOHANG)==0); // TODO if pass this section so pid is a real proc in prog SH
-    if (sig_num == SIGALRM) {
-        signal(SIGALRM, SIG_DFL); // because of timeoutCommand
-    }
-    int flag = kill(pid, sig_num); // TODO the usless arg use for debug. before finish just put it inside the if check SH
-    if (flag == -1) {
-        perror("");
+//    if (sig_num == SIGALRM) { // TODO we need to speak about that...
+//        signal(SIGALRM, SIG_DFL); // because of timeoutCommand
+//    }
+    if (kill(pid, sig_num) == -1) {
+        perror("smash error: kill failed");
         return;
     }
-    if (sig_num == SIGALRM) {
-        signal(SIGALRM, catchTimeOut); // because of timeoutCommand
-    }
+//    if (sig_num == SIGALRM) {
+//        signal(SIGALRM, catchTimeOut); // because of timeoutCommand
+//    }
     cout << "signal number " << sig_num << " was sent to pid " << pid << endl;
 }
 
@@ -451,7 +444,6 @@ void BackgroundCommand::execute() {
 
 // BUILT IN NUMBER #9
 
-
 QuitCommand::QuitCommand(const char *cmd_line, JobsList *jobs): BuiltInCommand(cmd_line),  jobs(jobs) {}
 
 void QuitCommand::execute() {
@@ -478,14 +470,14 @@ void CpCommand::execute() {
 
   pid_t pid = fork();
   if (pid == -1) {
-    perror("");
+      perror("smash error: fork failed");
   }
 
   else if (pid == 0) {// son. the new forked proc
 
     if(setpgrp() == -1) {
-      perror("setpgrp failed");
-      exit(0);
+        perror("smash error: setpgrp failed");
+        exit(0);
     }
 
     char* args[COMMAND_MAX_ARGS + 1];
@@ -501,6 +493,7 @@ void CpCommand::execute() {
 
     if (argsNum != 3) {
       // TODO should we print error?
+      cout << "smash error: invalid arguments" << endl; // TODO like this?
       exit(0);
     }
 
@@ -576,7 +569,7 @@ void CpCommand::execute() {
       smash.setcurrentPid(pid);
       smash.setcurrentCmd(cmd_line);
       if (waitpid(pid,NULL,WUNTRACED) == -1) {
-        perror("");
+          perror("smash error: waitpid failed");
       }
       smash.setcurrentPid(-1);
     }
@@ -619,7 +612,7 @@ void RedirectionCommand::execute() {
         return;
     }
     if (dup_org == -1) {
-        cout << "smash error:....." << endl; // TODO
+        perror("smash error: dup failed");
         return;
     }
 
@@ -638,7 +631,7 @@ void RedirectionCommand::execute() {
     }
 
     if (file == -1) {
-        cout << "smash error:....." << endl; // TODO
+        perror("smash error: dup failed");
         return;
     }
 
@@ -646,12 +639,12 @@ void RedirectionCommand::execute() {
 
     try {
         if (close(1) == -1) {
-            cout << "smash error:....." << endl; // TODO
+            perror("smash error: close failed");
             return;
         }
 
         if (dup(dup_org) == -1) {
-            cout << "smash error:....." << endl; // TODO
+            perror("smash error: close failed");
             return;
         }
     }
@@ -666,7 +659,7 @@ void PipeCommand::execute() {
     //// smash fork first son and  fork second son
     //// first - reader, second - writer
 
-    int out_or_err = STDOUT_FILENO; // STDOUT_FILENO=1 // TODO implement
+    int out_or_err = STDOUT_FILENO; // STDOUT_FILENO=1
     bool is_bg = _isBackgroundComamnd(cmd_line);
 
     string cmd_cpy = string(cmd_line);
@@ -684,7 +677,7 @@ void PipeCommand::execute() {
 //    if (first_cmd.find_first_of("|") != -1 || second_cmd.find_first_of("|") != -1) {
 //        cout << "smash error: pipe: invalid arguments: pipe inside pipe" << endl;
 //        return;
-//    } // TODO double check this case. pipe inside a pipe
+//    } // TODO double check this case. pipe inside a pipe case... not sure if needed or not
 
     int idx = second_cmd.find_last_not_of(WHITESPACE);
     if (idx != string::npos && second_cmd[idx] == '&') {
@@ -692,17 +685,17 @@ void PipeCommand::execute() {
     }
 
     int fd[2];
-    if (pipe(fd) == -1) { // TODO check if really need to be check
-        perror(""); // or cout << "smash.... pipe fail..."...
+    if (pipe(fd) == -1) {
+        perror("smash error: pipe failed");
         exit(0);
     }
 
     int pid_first = fork();
     if (pid_first == -1) {
-        perror(""); // or cout << "smash.... fork fail..."...
+        perror("smash error: fork failed");
         return;
     }
-    else if (pid_first == 0) {
+    else if (pid_first == 0) { // TODO there is a trick here we need to speak about...
         dup2(fd[1], out_or_err);
         close(fd[0]);
         close(fd[1]);
@@ -712,7 +705,7 @@ void PipeCommand::execute() {
 
     int pid_second = fork();
     if (pid_second == -1) {
-        perror(""); // or cout << "smash.... fork fail..."...
+        perror("smash error: fork failed");
         return;
     }
     else if (pid_second == 0) {
@@ -723,7 +716,7 @@ void PipeCommand::execute() {
         exit(0);
     }
     if (close(fd[0]) == -1 || close(fd[1])) {
-        perror("");
+        perror("smash error: close failed");
         exit(0);
     }
 
@@ -736,7 +729,7 @@ void PipeCommand::execute() {
         smash.setcurrentPid(pid_first);
         smash.setcurrentCmd(cmd_line);
         if (waitpid(pid_first,NULL,WUNTRACED) == -1 || waitpid(pid_second,NULL,WUNTRACED) == -1) {
-            perror("");
+            perror("smash error: waitpid failed");
             exit(0);
         }
         smash.setcurrentPid(-1);
@@ -745,7 +738,15 @@ void PipeCommand::execute() {
 
 
 static bool isExternalCommand(string cmd) {
-    // TODO imp
+    char* args[COMMAND_MAX_ARGS];
+    int args_num = _parseCommandLine(cmd.c_str(), args);
+    string cmd_s = string(args[0]);
+
+    if (cmd_s == "chprompt" || cmd_s == "ls" || cmd_s == "pwd" || cmd_s == "cd" ||
+            cmd_s == "jobs" || cmd_s == "fg" || cmd_s == "bg" || cmd_s == "quit" ||
+            cmd_s == "cp" || cmd_s == "kill") {
+        return false;
+    }
     return true;
 }
 
@@ -765,23 +766,22 @@ void TimeoutCommand::execute() {
     }
     string cmd_to_run = _trim(full_cmd.substr(idx+string(args[1]).length()));
 
-    signal(SIGALRM, catchTimeOut);
+//    signal(SIGALRM, catchTimeOut); // in case we want to change our signal manually
     time_t now = time(nullptr);
-
 
     JobsList::JobEntry * last_ = smash.jb.getLastJob();
     if (!isExternalCommand(cmd_to_run)) {
-        cout << "what to do with built in command who gets timeout?? right now - nothing..." << endl; // TODO
+        cout << "what to do with built in command who gets timeout?? right now - nothing..." << endl; // TODO ???
         smash.executeCommand(cmd_to_run.c_str());
     }
     else {
         pid_t pid = fork();
         if (pid < 0) {
-            // TODO
+            perror("smash error: fork failed");
         }
         else if (pid == 0) {
             if(setpgrp() == -1) {
-                perror("setpgrp failed");
+                perror("smash error: setpgrp failed");
                 exit(0);
             }
             char cmd_cpy[COMMAND_ARGS_MAX_LENGTH];
@@ -789,7 +789,7 @@ void TimeoutCommand::execute() {
             _removeBackgroundSign(cmd_cpy);
             const char *proc_args[] = {"/bin/bash", "-c" , cmd_cpy, nullptr};
             if (execv("/bin/bash", (char * const*) proc_args) == -1) {
-                perror("");
+                perror("smash error: execv failed");
                 exit(0);
             }
         }
@@ -814,9 +814,7 @@ void TimeoutCommand::execute() {
 
  /// --------------------------- smash V, Command ^ ---------------------------
 
-SmallShell::SmallShell() : name("smash"), last_pwd(""), jb(), time_jb(){
-// TODO: add your implementation
-}
+SmallShell::SmallShell() : name("smash"), last_pwd(""), jb(), time_jb() {};
 
 SmallShell::~SmallShell() {};
 
@@ -901,27 +899,18 @@ Command* SmallShell::CreateCommand(const char *cmd_line) {
     else if (cmd_s == "timeout") {
         return new TimeoutCommand(cmd_line) ;
     }
-    else {
-        return new ExternalCommand(cmd_line);
-    }
 
-    return nullptr; // TODO should not reach here SH
+    return new ExternalCommand(cmd_line); // in any other case - external
 }
 
 void SmallShell::executeCommand(const char *cmd_line) {
-  // TODO: Add your implementation here
-  // for example:
-  // Command* cmd = CreateCommand(cmd_line);
-  // cmd->execute();
-  // Please note that you must fork smash process for some commands (e.g., external commands....)
-
   Command* command = SmallShell::CreateCommand(cmd_line);
   if (!command) {
       return;
   }
   command->execute();
 
-  delete(command); // TODO ??
+  delete(command); // TODO ?? we need to run valgrind sometimes even if leaks will not be checked
 
 }
 
@@ -1019,19 +1008,6 @@ void JobsList::addJob(const char* cmd, Status status, pid_t pid){
 }
 
 
-//void JobsList::removeFinishedJobs() {
-//    pid_t tmp_pid = 0;
-//    while (tmp_pid = waitpid(-1,NULL,WNOHANG) > 0) {
-//        assert(tmp_pid!=1); // TODO BUG remove
-//        auto it = jobs.begin();
-//        while (it->getPid() != tmp_pid) {
-//            it++;
-//        }
-//        cout << "erase from jobs proc " << it->getPid() << endl;
-//        jobs.erase(it);
-//    }
-//}
-
 void JobsList::removeFinishedJobs(){
 
     auto it = jobs.begin();
@@ -1040,46 +1016,17 @@ void JobsList::removeFinishedJobs(){
         int status;
         pid_t res = waitpid(it->getPid(), &status, WNOHANG);
         if (res > 0) {
-//            cout << "remove proc " << it->getPid() << endl; // TODO for debug
             jobs.erase(it++);
         }
-        else if (res == -1) { // TODO for debug. when finish union this with prev "if" section
-//            cout << "some error.... " << (*it).getPid() << "... anyway, i deleted it"<< endl; // TODO for debug
-//            perror(""); // TODO for debug. mostly happens when race with short process like sleep 1&
+        else if (res == -1) {
+            perror("smash error: waitpid failed"); // something went wrong if we got here
             jobs.erase(it++);
         }
         else {
-//            cout << "this proc is still running!!!!!! " << (*it).getPid() << endl; // TODO for debug
             ++it;
         }
     }
 }
-
-//void JobsList::removeFinishedJobs(){
-//  int current_max = 0;
-//  int result;
-//  int status;
-//  vector<JobEntry> new_jobs;
-//
-//  vector <JobEntry> :: iterator job = jobs.begin();
-//
-//
-//  for(auto& job: jobs){
-//    result = waitpid(job.getPid(), &status, WNOHANG);
-//    if (result < 0){
-//      // TODO : delete this shit
-//      cout << "result weird " << job.getId() << endl;
-//    }
-//    if (result == 0) {
-//      if(job.getId() > current_max)
-//        current_max = job.getId();
-//      new_jobs.push_back(JobEntry(job));
-//
-//    }// not finished yet
-//  }
-//  jobs = new_jobs;
-//  max_id = current_max;
-//}
 
 
 void JobsList:: printJobsList(){
@@ -1134,8 +1081,6 @@ void JobsList::removeJobById(int jobId) {
       return;
     }
   }
-  //TODO remove it before done, for debug
-  cout << "no job with id: " << jobId << "found" << endl;
 }
 
 void JobsList::killAllJobs() {

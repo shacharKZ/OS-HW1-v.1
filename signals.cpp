@@ -42,10 +42,22 @@ void ctrlCHandler(int sig_num) {
 
 }
 
-
-
 void alarmHandler(int sig_num) {
-  // TODO: Add your implementation
-    exit(1); // TODO i added this SH
+    cout << "smash: got an alarm" << endl;
+    time_t now = time(nullptr);
+
+    auto it = smash.time_jb.begin();
+    while (it < smash.time_jb.end()) {
+        if(it->first <= now) {
+            pid_t pid = it->second.second;
+            cout << it->second.first << " time out!" << endl;
+            smash.time_jb.erase(it++);
+            kill(pid,SIGKILL);
+        }
+        else {
+            ++it;
+        }
+    }
+    // exit(0); // no!
 }
 
