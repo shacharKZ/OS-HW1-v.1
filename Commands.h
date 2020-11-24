@@ -174,6 +174,7 @@ public:
     JobEntry *getLastStoppedJob();
     JobEntry *getLastJob();
     JobEntry * getJobById(int jobId);
+    JobEntry * getJobByPid(pid_t pid);
     //TODO continue from here - ofir
 
     // TODO: Add extra methods or modify exisitng ones as needed

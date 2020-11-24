@@ -712,6 +712,25 @@ void PipeCommand::execute() {
     }
 }
 
+static void catchTimeOut(int signum) {
+    cout << "catch timeout sig... this is for testing only" << endl;
+    cout << "smash: got an alarm" << endl;
+    pid_t pid = getpid();
+    JobsList::JobEntry * proc = smash.time_jb.getJobByPid(pid);
+    if (!proc) {
+        cout << "smash: timeoutCommand error: process has already been deleted" << endl;
+        exit(0);
+    }
+    cout << proc->getCmd() << " time out!" << endl;
+    smash.time_jb.removeJobById(proc->getId());
+//    smash.jb.removeJobById(proc->getId()); // useless
+    exit(0);
+}
+
+static bool isExternalCommand(string cmd) {
+    // TODO imp
+    return true;
+}
 
 TimeoutCommand::TimeoutCommand(const char* cmd_line) : Command(cmd_line) {};
 
@@ -726,6 +745,41 @@ void TimeoutCommand::execute() {
         cout << "smash error: TimeoutCommand: : invalid arguments" << endl;
     }
     string cmd_to_run = _trim(full_cmd.substr(idx+string(args[1]).length()));
+
+    signal(SIGALRM, catchTimeOut);
+    time_t now = time(nullptr);
+
+    bool is_bg = _isBackgroundComamnd(cmd_to_run.c_str());
+    JobsList::JobEntry * last_ = smash.jb.getLastJob();
+    smash.executeCommand(cmd_to_run.c_str());
+
+    if (!isExternalCommand(cmd_to_run)) {
+        cout << "what to do with built in command who gets timeout?? right now - nothing..." << endl; // TODO
+        smash.executeCommand(cmd_to_run.c_str());
+    }
+    else {
+        pid_t pid = fork();
+        if (pid < 0) {
+            // TODO
+        }
+        else if (pid == 0) {
+            setpgrp(); // TODO
+            smash.executeCommand(cmd_to_run.c_str());
+            exit(0);
+        }
+        else {
+            smash.time_jb.addJob(cmd_to_run.c_str(), RUNNING, pid);
+            smash.jb.addJob(cmd_to_run.c_str(), RUNNING, pid);
+            alarm((int)difftime(pid,now+sec));
+
+            smash.setcurrentPid(pid);
+            smash.setcurrentCmd(cmd_line);
+            if (waitpid(pid,NULL,WUNTRACED) == -1) {
+                perror("");
+            }
+            smash.setcurrentPid(-1);
+        }
+    }
 
 
 
@@ -1017,6 +1071,18 @@ JobsList::JobEntry * JobsList::getJobById(int jobId) {
     }
     return nullptr;
 }
+
+JobsList::JobEntry * JobsList::getJobByPid(pid_t pid) {
+
+    for(auto job = jobs.begin(); job != jobs.end(); ++job) {
+        if (job->getPid() == pid) {
+            JobEntry* tmp = &(*job);
+            return tmp;
+        }
+    }
+    return nullptr;
+}
+
 
 JobsList::JobEntry *JobsList::getLastStoppedJob() {
   for(auto job = jobs.rbegin(); job != jobs.rend(); ++job){
