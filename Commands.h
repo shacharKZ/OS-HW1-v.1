@@ -55,6 +55,11 @@ class ExternalCommand : public Command {
 
 class PipeCommand : public Command {
   // TODO: Add your data members
+  int out_or_err;
+  string first_cmd;
+  string second_cmd;
+  bool is_bg;
+  Command* first_command;
  public:
   PipeCommand(const char* cmd_line);
   virtual ~PipeCommand() {}
@@ -81,6 +86,8 @@ public:
 };
 
 class GetCurrDirCommand : public BuiltInCommand {
+    string dir_to_print;
+    bool flag_print;
  public:
   GetCurrDirCommand(const char* cmd_line);
   virtual ~GetCurrDirCommand() = default;
@@ -88,6 +95,8 @@ class GetCurrDirCommand : public BuiltInCommand {
 };
 
 class ShowPidCommand : public BuiltInCommand {
+    pid_t pid;
+    bool flag_print;
  public:
   ShowPidCommand(const char* cmd_line);
   virtual ~ShowPidCommand() = default;
@@ -111,7 +120,7 @@ public:
   void execute() override;
 };
 
-class CommandsHistory {
+class CommandsHistory { // TODO WTF
  protected:
   class CommandHistoryEntry {
 	  // TODO: Add your data members
@@ -124,7 +133,7 @@ class CommandsHistory {
   void printHistory();
 };
 
-class HistoryCommand : public BuiltInCommand {
+class HistoryCommand : public BuiltInCommand { // TODO WTF??
  // TODO: Add your data members
  public:
   HistoryCommand(const char* cmd_line, CommandsHistory* history);
@@ -181,12 +190,15 @@ public:
 class JobsCommand : public BuiltInCommand {
  // TODO: Add your data members
  public:
-  JobsCommand(const char* cmd_line, JobsList* jobs);
-  virtual ~JobsCommand() {}
+  JobsCommand(const char* cmd_line);
+  virtual ~JobsCommand() = default;
   void execute() override;
 };
 
 class KillCommand : public BuiltInCommand {
+  bool flag_good_input;
+  int sig_num;
+  int proc_id;
  public:
   KillCommand(const char* cmd_line);
   virtual ~KillCommand() = default;
@@ -249,27 +261,25 @@ public:
   ~SmallShell(); // TODO probably future valgrind problems.... SH
 
   // methods
+  Command* createCommand(const char *cmd_line);
   void executeCommand(const char* cmd_line);
+
   string getName();
   void setName(std::string set_name);
   pid_t getcurrentPid();
   void setcurrentPid(pid_t currentPid);
-
   const char* getcurrentCmd();
   void setcurrentCmd(const char*);
-
-  Command* createCommand(const char *cmd_line);
 };
 
 
-//class ChpromptCommand : public BuiltInCommand {
-//    SmallShell* smash;
-//    std::string name_to_set;
-//public:
-//    ChpromptCommand(SmallShell* smash, std::string set_name, const char* cmd_line);
-//    virtual ~ChpromptCommand() {}
-//    void execute() override;
-//};
+class ChpromptCommand : public BuiltInCommand {
+    std::string name_to_set;
+public:
+    ChpromptCommand(const char* cmd_line);
+    virtual ~ChpromptCommand() = default;
+    void execute() override;
+};
 
 #endif //SMASH_COMMAND_H_
 
