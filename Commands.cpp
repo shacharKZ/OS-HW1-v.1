@@ -4,7 +4,7 @@
 #include <vector>
 #include <sstream>
 #include <sys/wait.h>
-#include <iomanip>
+//#include <iomanip>
 #include "Commands.h"
 #include <assert.h>
 #include <sys/stat.h>
@@ -615,8 +615,6 @@ void CpCommand::execute() {
 
 
 
-
-
 RedirectionCommand::RedirectionCommand (const char* cmd_line) : Command(cmd_line) {};
 
 void RedirectionCommand::execute() {
@@ -673,7 +671,6 @@ void RedirectionCommand::execute() {
         perror("smash error: dup failed");
         return;
     }
-
 }
 
 static bool isExternalCommand(string cmd) {
