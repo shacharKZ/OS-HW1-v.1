@@ -393,9 +393,6 @@ void ForegroundCommand::execute() {
     return;
   }
 
-  // removing from job list
-  jobs->removeJobById(lastJob->getId());
-
 
   // continue the job if it stopped
   if(lastJob->getStatus() == STOPPED) {
@@ -405,15 +402,17 @@ void ForegroundCommand::execute() {
     }
   }
 
-  cout << lastJob->getCmd() << " :" << jobPid <<endl;
+  cout << lastJob->getCmd() << ": " << jobPid <<endl;
 
   smash.setcurrentPid(jobPid);
   smash.setcurrentCmd(lastJob->getCmd().c_str());
-
+  smash.setcurrentFg(true);
   if (waitpid(jobPid, nullptr, WUNTRACED) == -1) {
     perror("smash error: waitpid failed");
     return;
   }
+
+  smash.setcurrentFg(false);
   smash.setcurrentPid(-1);
 }
 
@@ -468,7 +467,7 @@ void BackgroundCommand::execute() {
 
 
   // continue the job
-  cout << lastJob->getCmd() << " :" << jobPid <<endl;
+  cout << lastJob->getCmd() << ": " << jobPid <<endl;
   if (kill(jobPid, SIGCONT) == -1) {
     perror("smash error: kill failed");
     return;
@@ -1137,6 +1136,16 @@ pid_t SmallShell::getcurrentPid() {
 void SmallShell::setcurrentPid(pid_t pid) {
    currentPid = pid;
 }
+
+bool SmallShell::getcurrentFg() {
+  return currentFg;
+}
+
+
+void SmallShell::setcurrentFg(bool cur) {
+  currentFg = cur;
+}
+
 
 const char* SmallShell::getcurrentCmd() {
   return currentCmd;

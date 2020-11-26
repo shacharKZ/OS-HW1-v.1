@@ -22,7 +22,8 @@ void ctrlZHandler(int sig_num) {
   }
 
   cout << "smash: process " << currPid << " was stopped" << endl;
-  smash.jb.addJob(cmd, STOPPED, currPid);
+  if (smash.getcurrentFg() == false)
+    smash.jb.addJob(cmd, STOPPED, currPid);
 }
 
 void ctrlCHandler(int sig_num) {

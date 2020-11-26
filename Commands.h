@@ -242,6 +242,7 @@ class SmallShell {
     std::string name;
     pid_t currentPid;
     char currentCmd[COMMAND_ARGS_MAX_LENGTH];
+    bool currentFg;
 public:
   // fields
   JobsList jb;
@@ -256,6 +257,9 @@ public:
   {
     static SmallShell instance; // Guaranteed to be destroyed.
     // Instantiated on first use.
+    instance.setcurrentPid(-1);
+    instance.setcurrentFg(false);
+
     return instance;
   }
   ~SmallShell(); // TODO probably future valgrind problems.... SH
@@ -268,6 +272,8 @@ public:
   void setName(std::string set_name);
   pid_t getcurrentPid();
   void setcurrentPid(pid_t currentPid);
+  bool getcurrentFg();
+  void setcurrentFg(bool);
   const char* getcurrentCmd();
   void setcurrentCmd(const char*);
 };
