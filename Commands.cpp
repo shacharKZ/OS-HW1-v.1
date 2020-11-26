@@ -155,7 +155,7 @@ void ShowPidCommand::execute() {
         cout << "smash pid is " << pid << endl;
     }
     else {
-        perror("smash error: showpid: ");
+        perror("smash error: showpid");
     }
 
 };
@@ -189,7 +189,7 @@ void ChangeDirCommand::execute() {
 
     char dir[COMMAND_ARGS_MAX_LENGTH]; // get current pwd to store in smash.last_pwd (OLDPWD)
     if (!getcwd(dir, sizeof(dir))) {
-        perror("smash error: cd: ");
+        perror("smash error: chdir failed"); // TODO
         return;
     }
 
@@ -197,7 +197,7 @@ void ChangeDirCommand::execute() {
         smash.last_pwd = string(dir);
     }
     else {
-        perror("smash error: cd: ");
+        perror("smash error: chdir failed"); // TODO
     }
 }
 
@@ -234,7 +234,7 @@ void GetCurrDirCommand::execute() {
         cout << dir_to_print << endl;
     }
     else {
-        perror("smash error: pwd: ");
+        perror("smash error: pwd");
     }
 //    char dir[COMMAND_ARGS_MAX_LENGTH];
 //    if (getcwd(dir, sizeof(dir))) {
@@ -326,6 +326,10 @@ KillCommand::KillCommand(const char* cmd_line) : BuiltInCommand(cmd_line) {
 }
 
 void KillCommand::execute() {
+    if (!flag_good_input) {
+        cerr << "smash error: kill: invalid arguments" << endl;
+        return;
+    }
     JobsList::JobEntry* je = smash.jb.getJobById(proc_id);
     if (je == nullptr) {
         cerr << "smash error: kill: job-id " << proc_id << " does not exist" << endl;
@@ -341,7 +345,7 @@ void KillCommand::execute() {
         signal(SIGALRM, alarmHandler); // because of timeoutCommand
     }
     if (flag) {
-        perror("smash error: kill failed ");
+        perror("smash error: kill failed");
         return;
     }
 
@@ -374,7 +378,7 @@ void ForegroundCommand::execute() {
     lastJob = jobs->getJobById(jobId);
 
     if (!lastJob) {
-      cout << "smash error: fg: job-id " << jobId << " does not exist" << endl;
+      cout << "smash error: fg: job-id " << jobId << " does not exist" << endl; // TODO cerr? SH
       return;
     } else {
       jobPid = lastJob->getPid();
@@ -382,7 +386,7 @@ void ForegroundCommand::execute() {
   }
 
   else {
-    cout << "smash error: fg: invalid arguments" << endl;
+    cout << "smash error: fg: invalid arguments" << endl; // TODO cerr? SH
     return;
   }
 
@@ -605,7 +609,8 @@ void RedirectionCommand::execute() {
     string cmd_cpy = string(cmd_line);
     int split_index = cmd_cpy.find_first_of(">");
     if (split_index - 1 <= 0) {
-        cout << "smash error: invalid arguments" << endl;
+        cerr << "smash error: invalid arguments" << endl;
+        return;
     }
 
     bool flag_overwrite = true;
@@ -619,7 +624,7 @@ void RedirectionCommand::execute() {
         file_name = cmd_cpy.substr(split_index+1);
     }
     file_name = _trim(file_name);
-    string real_cmd = cmd_cpy.substr(0, split_index - 1);
+    string real_cmd = cmd_cpy.substr(0, split_index);
 
     int dup_org = dup(1);
     if (dup_org == -1) {
@@ -628,6 +633,7 @@ void RedirectionCommand::execute() {
     }
     if (close(1) == -1) {
         perror("smash error: close failed");
+        return;
     }
 
     int file = -1;
@@ -641,6 +647,8 @@ void RedirectionCommand::execute() {
 
     if (file == -1) {
         perror("smash error: open failed");
+        close(1);
+        dup(dup_org);
         return;
     }
 
@@ -648,6 +656,7 @@ void RedirectionCommand::execute() {
 
     if (close(1) == -1) {
         perror("smash error: close failed");
+        dup(dup_org);
         return;
     }
 
@@ -704,14 +713,14 @@ void PipeCommand::execute() {
 
     int fd[2];
     if (pipe(fd) == -1) {
-        perror("smash error: pipe failed ");
+        perror("smash error: pipe failed");
         exit(0);
     }
 
     Command* first_command = smash.SmallShell::CreateCommand(first_cmd.c_str());
     int pid_first = fork();
     if (pid_first == -1) {
-        perror("smash error: fork failed ");
+        perror("smash error: fork failed");
         return;
     }
     else if (pid_first == 0) { // TODO there is a trick here we need to speak about...
@@ -726,7 +735,7 @@ void PipeCommand::execute() {
     Command* second_command = smash.CreateCommand(second_cmd.c_str());
     int pid_second = fork();
     if (pid_second == -1) {
-        perror("smash error: fork failed ");
+        perror("smash error: fork failed");
         return;
     }
     else if (pid_second == 0) {
@@ -738,7 +747,7 @@ void PipeCommand::execute() {
         exit(0);
     }
     if (close(fd[0]) == -1 || close(fd[1])) {
-        perror("smash error: close failed ");
+        perror("smash error: close failed");
         exit(0);
     }
 
@@ -754,7 +763,7 @@ void PipeCommand::execute() {
         smash.setcurrentPid(pid_first);
         smash.setcurrentCmd(cmd_line);
         if (waitpid(pid_first,NULL,WUNTRACED) == -1 || waitpid(pid_second,NULL,WUNTRACED) == -1) {
-            perror("smash error: waitpid failed ");
+            perror("smash error: waitpid failed");
             exit(0);
         }
         smash.setcurrentPid(-1);
@@ -976,20 +985,23 @@ void TimeoutCommand::execute() {
     bool is_bg = _isBackgroundComamnd(cmd_line);
 
     char* args[COMMAND_MAX_ARGS];
-    int args_num = _parseCommandLine(cmd_line, args);
+    if(_parseCommandLine(cmd_line, args) < 3) {
+        cerr << "smash error: timeout: invalid arguments" << endl;
+        return;
+    }
     int sec = Utils::strToInt(args[1]);
     int idx = full_cmd.find_first_of((args[1]));
     if (sec == -1 || idx == -1 || idx+string(args[1]).length()+1 >= full_cmd.length()) {
-        cout << "smash error: TimeoutCommand: : invalid arguments" << endl;
+        cerr << "smash error: timeout: invalid arguments" << endl;
+        return;
     }
     string cmd_to_run = _trim(full_cmd.substr(idx+string(args[1]).length()));
 
-//    signal(SIGALRM, catchTimeOut); // in case we want to change our signal manually
     time_t now = time(nullptr);
 
     JobsList::JobEntry * last_ = smash.jb.getLastJob();
     if (!isExternalCommand(cmd_to_run)) {
-        cout << "what to do with built in command who gets timeout?? right now - nothing..." << endl; // TODO ???
+//        cout << "what to do with built in command who gets timeout?? right now - nothing..." << endl; // TODO ???
         smash.executeCommand(cmd_to_run.c_str());
     }
     else {
