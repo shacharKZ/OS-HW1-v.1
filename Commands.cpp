@@ -131,6 +131,7 @@ void LSCommand::execute() {
 
     sort(vec.begin(), vec.end());
     for (auto name : vec) {
+      if (name != "." and name != "..")
         cout << name << endl;
     }
 
@@ -490,7 +491,7 @@ void QuitCommand::execute() {
   // TODO check quit blabla kill
   for (int i=1; i < argsNum; i++) {
     if (strcmp(args[i], "kill") == 0) {
-      cout << "sending SIGKILL signal to " << jobs->getNumOfJobs() << " jobs:" << endl;
+      cout << "smash: sending SIGKILL signal to " << jobs->getNumOfJobs() << " jobs:" << endl;
       jobs->killAllJobs();
       break;
     }
@@ -1236,8 +1237,12 @@ void JobsList::removeFinishedJobs(){
 
 void JobsList:: printJobsList(){
   for(auto job = jobs.begin(); job != jobs.end(); ++job){
-    cout << "[" << job->getId()<< "] " << job->getCmd() << " : " << job->getPid() << " " << difftime(time(0), job->getStartTime()) << endl;
+    cout << "[" << job->getId()<< "] " << job->getCmd() << " : " << job->getPid() << " " << difftime(time(0), job->getStartTime()) << " secs";
+    if(job->getStatus() == STOPPED)
+      cout << " (stopped)";
+    cout << endl;
   }
+
 }
 
 JobsList::JobEntry * JobsList::getJobById(int jobId) {
