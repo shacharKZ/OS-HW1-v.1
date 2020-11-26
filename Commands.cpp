@@ -370,21 +370,14 @@ void ForegroundCommand::execute() {
   }
 
   else if (argsNum == 2) {
-    jobId = Utils::strToInt(args[1]);
-    if (jobId == -1) {
-      cout << "smash error: fg: invalid arguments" << endl;
-      return;
-    } else if (jobId < 0) {
-      cout << "smash error: fg: invalid arguments" << endl;
+    jobId = atoi(args[1]);
+    lastJob = jobs->getJobById(jobId);
+
+    if (!lastJob) {
+      cout << "smash error: fg: job-id " << jobId << " does not exist" << endl;
       return;
     } else {
-      lastJob = jobs->getJobById(jobId);
-      if (!lastJob) {
-        cout << "smash error: fg: job-id " << jobId << " does not exist" << endl;
-        return;
-      }
-      else
-        jobPid = lastJob->getPid();
+      jobPid = lastJob->getPid();
     }
   }
 
@@ -402,7 +395,7 @@ void ForegroundCommand::execute() {
     }
   }
 
-  cout << lastJob->getCmd() << ": " << jobPid <<endl;
+  cout << lastJob->getCmd() << " : " << jobPid <<endl;
 
   smash.setcurrentPid(jobPid);
   smash.setcurrentCmd(lastJob->getCmd().c_str());
@@ -439,24 +432,16 @@ void BackgroundCommand::execute() {
   }
 
   else if (argsNum == 2) {
-    jobId = Utils::strToInt(args[1]);
-    if (jobId == -1) {
-      cout << "smash error: bg: invalid arguments" << endl;
+    jobId = atoi(args[1]);
+    lastJob = jobs->getJobById(jobId);
+    if (!lastJob) {
+      cout << "smash error: bg: job-id " << jobId << " does not exist" << endl;
       return;
-    } else if (jobId < 0) {
-      cout << "smash error: bg: invalid arguments" << endl;
+    } else if (lastJob->getStatus() == RUNNING) {
+      cout << "smash error: bg: job-id " << jobId << " is already running in the background" << endl;
       return;
     } else {
-      lastJob = jobs->getJobById(jobId);
-      if (!lastJob) {
-        cout << "smash error: bg: job-id " << jobId << " does not exist" << endl;
-        return;
-      } else if (lastJob->getStatus() == RUNNING) {
-        cout << "smash error: bg: job-id " << jobId << " is already running in the background" << endl;
-        return;
-      } else {
-        jobPid = lastJob->getPid();
-      }
+      jobPid = lastJob->getPid();
     }
   }
 
@@ -467,7 +452,7 @@ void BackgroundCommand::execute() {
 
 
   // continue the job
-  cout << lastJob->getCmd() << ": " << jobPid <<endl;
+  cout << lastJob->getCmd() << " : " << jobPid <<endl;
   if (kill(jobPid, SIGCONT) == -1) {
     perror("smash error: kill failed");
     return;
@@ -480,7 +465,6 @@ void BackgroundCommand::execute() {
 
 
 // BUILT IN NUMBER #9
-
 QuitCommand::QuitCommand(const char *cmd_line, JobsList *jobs): BuiltInCommand(cmd_line),  jobs(jobs) {}
 
 void QuitCommand::execute() {
