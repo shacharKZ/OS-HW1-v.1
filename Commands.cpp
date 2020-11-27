@@ -696,10 +696,10 @@ PipeCommand::PipeCommand(const char* cmd_line) : Command(cmd_line) {
     }
     first_cmd = _trim(cmd_cpy.substr(0, split_index)); // reader
 
-//    if (first_cmd.find_first_of("|") != -1 || second_cmd.find_first_of("|") != -1) {
-//        cout << "smash error: pipe: invalid arguments: pipe inside pipe" << endl;
-//        return;
-//    } // TODO double check this case. pipe inside a pipe case... not sure if needed or not
+    if (first_cmd.find_first_of("|") != -1 || second_cmd.find_first_of("|") != -1) {
+        cout << "smash error: pipe: invalid arguments: pipe inside pipe" << endl;
+        return;
+    } // TODO double check this case. pipe inside a pipe case... not sure if needed or not
 
     int idx = second_cmd.find_last_not_of(WHITESPACE);
     if (idx != string::npos && second_cmd[idx] == '&') {
@@ -999,48 +999,100 @@ void TimeoutCommand::execute() {
 
     time_t now = time(nullptr);
 
-    JobsList::JobEntry * last_ = smash.jb.getLastJob();
-    if (!isExternalCommand(cmd_to_run)) {
-//        cout << "what to do with built in command who gets timeout?? right now - nothing..." << endl; // TODO ???
-        smash.executeCommand(cmd_to_run.c_str());
+    Command * cmd = smash.CreateCommand(cmd_to_run.c_str());
+
+    pid_t pid = fork();
+    if (pid < 0) {
+        perror("smash error: fork failed");
+    }
+    else if (pid == 0) {
+        if(setpgrp() == -1) {
+            perror("smash error: setpgrp failed");
+            exit(0);
+        }
+        cmd->execute();
+        delete(cmd);
+        exit(0);
     }
     else {
-        pid_t pid = fork();
-        if (pid < 0) {
-            perror("smash error: fork failed");
-        }
-        else if (pid == 0) {
-            if(setpgrp() == -1) {
-                perror("smash error: setpgrp failed");
-                exit(0);
+        smash.time_jb.push_back(pair<int,pair<string, int>>(now+sec, pair<string, int>(full_cmd, pid)));
+//        smash.jb.addJob(cmd_to_run.c_str(), RUNNING, pid); // this is what i wrote
+        smash.jb.addJob(full_cmd.c_str(), RUNNING, pid); // to fit the tests
+        alarm(sec);
+        if(!is_bg) {
+            smash.setcurrentPid(pid);
+            smash.setcurrentCmd(cmd_line);
+            if (waitpid(pid,NULL,WUNTRACED) == -1) {
+                perror("smash error: waitpid failed");
             }
-            char cmd_cpy[COMMAND_ARGS_MAX_LENGTH];
-            strcpy(cmd_cpy,cmd_to_run.c_str());
-            _removeBackgroundSign(cmd_cpy);
-            const char *proc_args[] = {"/bin/bash", "-c" , cmd_cpy, nullptr};
-            if (execv("/bin/bash", (char * const*) proc_args) == -1) {
-                perror("smash error: execv failed");
-                exit(0);
-            }
-        }
-        else {
-            smash.time_jb.push_back(pair<int,pair<string, int>>(now+sec, pair<string, int>(cmd_to_run, pid)));
-            smash.jb.addJob(cmd_to_run.c_str(), RUNNING, pid);
-            alarm(sec);
-            if(!is_bg) {
-                smash.setcurrentPid(pid);
-                smash.setcurrentCmd(cmd_line);
-                if (waitpid(pid,NULL,WUNTRACED) == -1) {
-                    perror("");
-                }
-                smash.setcurrentPid(-1);
-            }
+            smash.setcurrentPid(-1);
+            delete(cmd);
+
         }
     }
 
-
-
 }
+
+//void TimeoutCommand::execute() {
+//
+//    string full_cmd = _trim(string(cmd_line));
+//    bool is_bg = _isBackgroundComamnd(cmd_line);
+//
+//    char* args[COMMAND_MAX_ARGS];
+//    if(_parseCommandLine(cmd_line, args) < 3) {
+//        cerr << "smash error: timeout: invalid arguments" << endl;
+//        return;
+//    }
+//    int sec = Utils::strToInt(args[1]);
+//    int idx = full_cmd.find_first_of((args[1]));
+//    if (sec == -1 || idx == -1 || idx+string(args[1]).length()+1 >= full_cmd.length()) {
+//        cerr << "smash error: timeout: invalid arguments" << endl;
+//        return;
+//    }
+//    string cmd_to_run = _trim(full_cmd.substr(idx+string(args[1]).length()));
+//
+//    time_t now = time(nullptr);
+//
+////    JobsList::JobEntry * last_ = smash.jb.getLastJob();
+//    if (!isExternalCommand(cmd_to_run)) {
+////        cout << "what to do with built in command who gets timeout?? right now - nothing..." << endl; // TODO ???
+//        smash.executeCommand(cmd_to_run.c_str());
+//    }
+//    else {
+//        pid_t pid = fork();
+//        if (pid < 0) {
+//            perror("smash error: fork failed");
+//        }
+//        else if (pid == 0) {
+//            if(setpgrp() == -1) {
+//                perror("smash error: setpgrp failed");
+//                exit(0);
+//            }
+//            char cmd_cpy[COMMAND_ARGS_MAX_LENGTH];
+//            strcpy(cmd_cpy,cmd_to_run.c_str());
+//            _removeBackgroundSign(cmd_cpy);
+//            const char *proc_args[] = {"/bin/bash", "-c" , cmd_cpy, nullptr};
+//            if (execv("/bin/bash", (char * const*) proc_args) == -1) {
+//                perror("smash error: execv failed");
+//                exit(0);
+//            }
+//        }
+//        else {
+//            smash.time_jb.push_back(pair<int,pair<string, int>>(now+sec, pair<string, int>(cmd_to_run, pid)));
+//            smash.jb.addJob(cmd_to_run.c_str(), RUNNING, pid);
+//            alarm(sec);
+//            if(!is_bg) {
+//                smash.setcurrentPid(pid);
+//                smash.setcurrentCmd(cmd_line);
+//                if (waitpid(pid,NULL,WUNTRACED) == -1) {
+//                    perror("");
+//                }
+//                smash.setcurrentPid(-1);
+//            }
+//        }
+//    }
+//
+//}
 
  /// --------------------------- smash V, Command ^ ---------------------------
 
