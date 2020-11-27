@@ -55,7 +55,7 @@ void alarmHandler(int sig_num) {
         if(it->first <= now) {
             pid_t pid = it->second.second;
             if (smash.jb.getJobByPid(pid) != nullptr) {
-                cout << "smash: " << it->second.first << " time out!" << endl;
+                cout << "smash: " << it->second.first << " timed out!" << endl;
             }
             smash.time_jb.erase(it++);
             kill(pid,SIGKILL);
