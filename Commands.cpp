@@ -698,92 +698,111 @@ PipeCommand::PipeCommand(const char* cmd_line) : Command(cmd_line) {
 
     int idx = second_cmd.find_last_not_of(WHITESPACE);
     if (idx != string::npos && second_cmd[idx] == '&') {
-        second_cmd[idx] = ' '; // i set the bg manually
+        second_cmd[idx] = ' '; // i will set the bg manually
     }
 }
 
 
-void PipeCommand::execute() {
-    //// smash fork first son and  fork second son
-    //// first - reader, second - writer
-
-
-
-    Command* first_command = smash.CreateCommand(first_cmd.c_str());
-    Command* second_command = smash.CreateCommand(second_cmd.c_str());
-    int pid_tmp_smash = fork();
-    if (pid_tmp_smash == -1) {
-        perror("smash error: fork failed");
-        return;
-    }
-    else if (pid_tmp_smash == 0) {// use as "fake" proc to hold the other procs: writer and reader
-        int fd[2];
-        if (pipe(fd) == -1) {
-            perror("smash error: pipe failed");
-            exit(0);
-        }
-
-        int pid_first = fork();
-        if (pid_first == -1) {
-            perror("smash error: fork failed");
-            return;
-        }
-        else if (pid_first == 0) { // TODO there is a trick here we need to speak about...
-            dup2(fd[1], out_or_err);
-            close(fd[0]);
-            close(fd[1]);
-            first_command->execute();
-            delete(first_command);
-            exit(0);
-        }
-        cerr << "tester1";
-
-        int pid_second = fork();
-        if (pid_second == -1) {
-            perror("smash error: fork failed");
-            return;
-        }
-        else if (pid_second == 0) {
-            dup2(fd[0], 0);
-            close(fd[0]);
-            close(fd[1]);
-            cerr << "hellow mortrkr";
-            second_command->execute();
-            delete(second_command);
-            cerr << "good bye mothewws";
-            exit(0);
-        }
-        cerr << "tester2";
-        if (waitpid(pid_first,NULL,WUNTRACED) == -1) {
-            perror("smash error: waitpid failed");
-        }
-        cerr << "tester3";
-        if (waitpid(pid_second,NULL,WUNTRACED) == -1) {
-            perror("smash error: waitpid failed");
-        }
-        cerr << "tester4";
-        if (close(fd[0]) == -1 || close(fd[1])) {
-            perror("smash error: close failed");
-            exit(0);
-        }
-        cerr << "tester5";
-        delete(first_command);
-        delete(second_command);
-        cerr << "this is the end";
-        exit(0);
-    }
-
-    smash.jb.addJob(*this, RUNNING, pid_tmp_smash);
-    if(!is_bg) {
-        smash.setcurrentPid(pid_tmp_smash);
-        smash.setcurrentCmd(cmd_line);
-        if (waitpid(pid_tmp_smash,NULL,WUNTRACED) == -1) {
-            perror("smash error: waitpid failed");
-            exit(0);
-        }
-        smash.setcurrentPid(-1);
-    }
-}
+//void PipeCommand::execute() {
+//    //// smash fork first son and  fork second son
+//    //// first - reader, second - writer
+//
+//    Command* first_command = smash.CreateCommand(first_cmd.c_str());
+//    Command* second_command = smash.CreateCommand(second_cmd.c_str());
+//    int pid_tmp_smash = fork();
+//    if (pid_tmp_smash == -1) {
+//        perror("smash error: fork failed");
+//        return;
+//    }
+//    else if (pid_tmp_smash == 0) {// use as "empty" proc to hold the other procs: writer and reader
+//        if(setpgrp() == -1) {
+//            perror("smash error: setpgrp failed");
+//            exit(0);
+//        }
+//        int fd[2];
+//        if (pipe(fd) == -1) {
+//            perror("smash error: pipe failed");
+//            exit(0);
+//        }
+//        int pid_first = fork();
+//        if (pid_first == -1) {
+//            perror("smash error: fork failed");
+//            return;
+//        }
+//        else if (pid_first == 0) { // TODO there is a trick here we need to speak about...
+//            if(setpgrp() == -1) {
+//                perror("smash error: setpgrp failed");
+//                exit(0);
+//            }
+//            if(dup2(fd[1], out_or_err) == -1) {
+//                perror("smash error: dup failed");
+//                exit(0);
+//            }
+//            if (close(fd[0])==-1 || close(fd[1]) == -1) {
+//                perror("smash error: close failed");
+//                exit(0);
+//            }
+//            cout << "U will not C this because it goes into the pip"; // TODO
+//            first_command->execute();
+//            delete(first_command);
+//            exit(0);
+//        }
+//
+//        int pid_second = fork();
+//        if (pid_second == -1) {
+//            perror("smash error: fork failed");
+//            return;
+//        }
+//        else if (pid_second == 0) {
+//            if(setpgrp() == -1) {
+//                perror("smash error: setpgrp failed");
+//                exit(0);
+//            }
+//            if (dup2(fd[0], 0) == -1) { // STDIN_FILENO=0
+//                perror("smash error: dup failed");
+//                exit(0);
+//            }
+//            if (close(fd[0]) == -1 || close(fd[1]) == -1) {
+//                perror("smash error: close failed");
+//                exit(0);
+//            }
+//            cerr << "and in the next line the code will stack"; // TODO
+//            second_command->execute();
+//            cerr << "if U C this so the bug fixed"; // TODO
+//            delete(second_command);
+//            exit(0);
+//        }
+//        if (waitpid(pid_first,NULL,WUNTRACED) == -1) {
+//            perror("smash error: waitpid failed");
+//        }
+//        if (waitpid(pid_second,NULL,WUNTRACED) == -1) {
+//            perror("smash error: waitpid failed");
+//        }
+//        if (close(fd[0]) == -1 || close(fd[1])) {
+//            perror("smash error: close failed");
+//            exit(0);
+//        }
+//        delete(first_command);
+//        delete(second_command);
+//        cerr << "this is the end";
+//        exit(0);
+//    }
+//
+////    if (close(fd[0]) == -1 || close(fd[1])) {
+////        perror("smash error: close failed");
+////        exit(0);
+////    }
+//    smash.jb.addJob(*this, RUNNING, pid_tmp_smash);
+//    if(!is_bg) {
+//        smash.setcurrentPid(pid_tmp_smash);
+//        smash.setcurrentCmd(cmd_line);
+//        if (waitpid(pid_tmp_smash,NULL,WUNTRACED) == -1) {
+//            perror("smash error: waitpid failed");
+//            exit(0);
+//        }
+//        smash.setcurrentPid(-1);
+//    }
+//}
 
 //void PipeCommand::execute() {
 //    //// smash fork first son and  fork second son
@@ -806,11 +825,11 @@ void PipeCommand::execute() {
 //        dup2(fd[1], out_or_err);
 //        close(fd[0]);
 //        close(fd[1]);
+//        cout << "U will not C this"; // TODO
 //        first_command->execute();
 //        delete(first_command);
 //        exit(0);
 //    }
-//
 //
 //    int pid_second = fork();
 //    if (pid_second == -1) {
@@ -819,7 +838,152 @@ void PipeCommand::execute() {
 //    }
 //    else if (pid_second == 0) {
 //        dup2(fd[0], 0);
+////        close(fd[0]);
+//        close(fd[1]);
+//        second_command->execute();
+//        delete(second_command);
+//        exit(0);
+//    }
+//    if (close(fd[0]) == -1 || close(fd[1])) {
+//        perror("smash error: close failed");
+//        exit(0);
+//    }
+//
+//    delete(first_command);
+//    delete(second_command);
+//
+//    smash.jb.addJob(*this, RUNNING, pid_second);
+//    if(!is_bg) {
+//        smash.setcurrentPid(pid_first);
+//        smash.setcurrentCmd(cmd_line);
+//        if (waitpid(pid_first,NULL,WUNTRACED) == -1 || waitpid(pid_second,NULL,WUNTRACED) == -1) {
+//            perror("smash error: waitpid failed");
+//            exit(0);
+//        }
+//        smash.setcurrentPid(-1);
+//    }
+//}
+
+
+void PipeCommand::execute() {
+    //// smash fork first son and  fork second son
+    //// first - reader, second - writer
+
+    int fd[2];
+    if (pipe(fd) == -1) {
+        perror("smash error: pipe failed");
+        exit(0);
+    }
+
+    Command* first_command = smash.SmallShell::CreateCommand(first_cmd.c_str());
+    Command* second_command = smash.CreateCommand(second_cmd.c_str());
+
+    int pid_wrapper = fork();
+    if (pid_wrapper == -1) {
+        perror("smash error: fork failed");
+        return;
+    }
+    else if (pid_wrapper == 0) {
+        int pid_first = fork();
+        if (pid_first == -1) {
+            perror("smash error: fork failed");
+            return;
+        }
+        else if (pid_first == 0) { //
+            if (dup2(fd[1], out_or_err) == -1) {
+                perror("smash error: dup failed");
+                exit(0);
+            }
+            if (close(fd[0]) == -1) {
+                perror("smash error: close failed");
+                exit(0);
+            }
+//        close(fd[1]); // do not remove from the comment! adding this line destroy everything
+//            cout << "U should not C this for '|' and U should C this for '|&'" << endl; // TODO this is the real test if the pipe works
+            first_command->execute();
+            delete(first_command);
+            exit(0);
+        }
+
+        int pid_second = fork();
+        if (pid_second == -1) {
+            perror("smash error: fork failed");
+            exit(0);
+        }
+        else if (pid_second == 0) {
+            if (dup2(fd[0], 0) == -1) {
+                perror("smash error: dup failed");
+                exit(0);
+            }
+//        close(fd[0]); // do not remove from the comment! adding this line destroy everything
+            if (close(fd[1]) == -1) {
+                perror("smash error: close failed");
+                exit(0);
+            }
+            second_command->execute();
+            delete(second_command);
+            exit(0);
+        }
+
+        delete(first_command);
+        delete(second_command);
+        exit(0);
+    }
+
+    delete(first_command);
+    delete(second_command);
+    if (close(fd[0]) == -1 || close(fd[1])) {
+        perror("smash error: close failed");
+        return;
+    }
+    smash.jb.addJob(*this, RUNNING, pid_wrapper);
+    if(!is_bg) {
+        smash.setcurrentPid(pid_wrapper);
+        smash.setcurrentCmd(cmd_line);
+        if (waitpid(pid_wrapper,NULL,WUNTRACED) == -1) {
+            perror("smash error: waitpid failed");
+            return;
+        }
+        smash.setcurrentPid(-1);
+    }
+}
+
+
+//void PipeCommand::execute() { // TODO the one that works!
+//    //// smash fork first son and  fork second son
+//    //// first - reader, second - writer
+//
+//    int fd[2];
+//    if (pipe(fd) == -1) {
+//        perror("smash error: pipe failed");
+//        exit(0);
+//    }
+//
+//    Command* first_command = smash.SmallShell::CreateCommand(first_cmd.c_str());
+//    Command* second_command = smash.CreateCommand(second_cmd.c_str());
+//    int pid_first = fork();
+//    if (pid_first == -1) {
+//        perror("smash error: fork failed");
+//        return;
+//    }
+//    else if (pid_first == 0) { // TODO there is a trick here we need to speak about...
+//        dup2(fd[1], out_or_err);
 //        close(fd[0]);
+////        close(fd[1]);
+//        cout << "U will not C this"; // TODO
+//        first_command->execute();
+//        delete(first_command);
+//        exit(0);
+//    }
+//
+//    int pid_second = fork();
+//    if (pid_second == -1) {
+//        perror("smash error: fork failed");
+//        return;
+//    }
+//    else if (pid_second == 0) {
+//        dup2(fd[0], 0);
+////        close(fd[0]);
 //        close(fd[1]);
 //        second_command->execute();
 //        delete(second_command);
