@@ -884,12 +884,21 @@ void PipeCommand::execute() {
         return;
     }
     else if (pid_wrapper == 0) {
+//        if(setpgrp() == -1) {
+//            perror("smash error: setpgrp failed");
+//            exit(0);
+//        }
+
         int pid_first = fork();
         if (pid_first == -1) {
             perror("smash error: fork failed");
             return;
         }
         else if (pid_first == 0) { //
+            if(setpgrp() == -1) {
+                perror("smash error: setpgrp failed");
+                exit(0);
+            }
             if (dup2(fd[1], out_or_err) == -1) {
                 perror("smash error: dup failed");
                 exit(0);
@@ -899,7 +908,10 @@ void PipeCommand::execute() {
                 exit(0);
             }
 //        close(fd[1]); // do not remove from the comment! adding this line destroy everything
-//            cout << "U should not C this for '|' and U should C this for '|&'" << endl; // TODO this is the real test if the pipe works
+
+//            cout << "COUT: U should not C this for '|' and U should C this for '|&'" << endl; // TODO this is the real test if the pipe works
+//            cerr << "CERR: U should not C this for '|' and U should C this for '|&'" << endl;
+
             first_command->execute();
             delete(first_command);
             exit(0);
@@ -911,6 +923,10 @@ void PipeCommand::execute() {
             exit(0);
         }
         else if (pid_second == 0) {
+            if(setpgrp() == -1) {
+                perror("smash error: setpgrp failed");
+                exit(0);
+            }
             if (dup2(fd[0], 0) == -1) {
                 perror("smash error: dup failed");
                 exit(0);
@@ -920,6 +936,7 @@ void PipeCommand::execute() {
                 perror("smash error: close failed");
                 exit(0);
             }
+//            write(out_or_err, "/n", 1); // TODO !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             second_command->execute();
             delete(second_command);
             exit(0);
@@ -927,6 +944,14 @@ void PipeCommand::execute() {
 
         delete(first_command);
         delete(second_command);
+        if (waitpid(pid_first,NULL,WUNTRACED) == -1) {
+            perror("smash error: waitpid failed");
+//            exit(0);
+        }
+        if ( waitpid(pid_second,NULL,WUNTRACED) == -1) { // TODO this one FUCK everythin. why?!?!?!
+            perror("smash error: waitpid failed");
+//            exit(0);
+        }
         exit(0);
     }
 
