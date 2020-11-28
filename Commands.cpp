@@ -720,7 +720,7 @@ void PipeCommand::execute() {
         exit(0);
     }
 
-    first_cmd = first_cmd +'&';
+//    first_cmd = first_cmd +'&';
     Command* first_command = smash.SmallShell::CreateCommand(first_cmd.c_str());
     first_command->type = TAKEOVER;
     Command* second_command = smash.CreateCommand(second_cmd.c_str());
@@ -799,70 +799,6 @@ void PipeCommand::execute() {
         smash.setcurrentPid(-1);
     }
 }
-
-//void PipeCommand::execute() {
-//    //// smash fork first son and  fork second son
-//    //// first - reader, second - writer
-//
-//    int fd[2];
-//    if (pipe(fd) == -1) {
-//        perror("smash error: pipe failed");
-//        exit(0);
-//    }
-//
-//    Command* first_command = smash.SmallShell::CreateCommand(first_cmd.c_str());
-//    int pid_first = fork();
-//    if (pid_first == -1) {
-//        perror("smash error: fork failed");
-//        return;
-//    }
-//    else if (pid_first == 0) { // TODO there is a trick here we need to speak about...
-//        dup2(fd[1], out_or_err);
-//        close(fd[0]);
-//        close(fd[1]);
-//        first_command->execute();
-//        delete(first_command);
-//        exit(0);
-//    }
-//
-//    Command* second_command = smash.CreateCommand(second_cmd.c_str());
-//    int pid_second = fork();
-//    if (pid_second == -1) {
-//        perror("smash error: fork failed");
-//        return;
-//    }
-//    else if (pid_second == 0) {
-//        dup2(fd[0], 0);
-//        close(fd[0]);
-//        close(fd[1]);
-//        second_command->execute();
-//        delete(second_command);
-//        exit(0);
-//    }
-//    if (close(fd[0]) == -1 || close(fd[1])) {
-//        perror("smash error: close failed");
-//        exit(0);
-//    }
-//
-//    delete(first_command);
-//    delete(second_command);
-//
-//    if (is_bg) {
-//        // this is not clear if we need to add the first proc pid or the second proc...
-//        // in reception hour David told that because they did not mention a specific rule for it - any option will be accepted
-//        smash.jb.addJob(*this, RUNNING, pid_first);
-//    }
-//    else {
-//        smash.setcurrentPid(pid_first);
-//        smash.setcurrentCmd(cmd_line);
-//        if (waitpid(pid_first,NULL,WUNTRACED) == -1 || waitpid(pid_second,NULL,WUNTRACED) == -1) {
-//            perror("smash error: waitpid failed");
-//            exit(0);
-//        }
-//        smash.setcurrentPid(-1);
-//    }
-//}
-
 
 
 TimeoutCommand::TimeoutCommand(const char* cmd_line) : Command(cmd_line) {};
@@ -949,7 +885,8 @@ Command* SmallShell::CreateCommand(const char *cmd_line) {
         return new ChpromptCommand(cmd_line);
     }
     else if (cmd_s == "ls" || cmd_s == "ls&") {
-        return new LSCommand(cmd_line);
+//        return new LSCommand(cmd_line); // TODO !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
+        return new ExternalCommand("ls");
     }
     else if (cmd_s == "showpid" || cmd_s == "showpid&") {
         return new ShowPidCommand(cmd_line);
