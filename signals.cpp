@@ -1,7 +1,16 @@
 #include <iostream>
-#include <signal.h>
 #include "signals.h"
+#include <unistd.h>
+#include <string.h>
+#include <iostream>
+#include <vector>
+#include <sstream>
+#include <sys/wait.h>
+//#include <iomanip>
 #include "Commands.h"
+#include <sys/stat.h>
+#include <algorithm>
+
 
 using namespace std;
 
@@ -64,5 +73,10 @@ void alarmHandler(int sig_num) {
             ++it;
         }
     }
-}
 
+    if (!smash.time_jb.empty()) {
+        sort(smash.time_jb.begin(), smash.time_jb.end());
+        alarm(smash.time_jb.begin()->first - now);
+    }
+
+}

@@ -1024,7 +1024,8 @@ void TimeoutCommand::execute() {
     smash.jb.addJob(full_cmd.c_str(), RUNNING, pid);
 
     smash.time_jb.push_back(pair<int,pair<string, int>>(now+sec, pair<string, int>(full_cmd, pid)));
-    alarm(sec);
+    sort(smash.time_jb.begin(), smash.time_jb.end());
+    alarm(smash.time_jb.begin()->first - now);
     if(!is_bg) {
         smash.setcurrentPid(pid);
         smash.setcurrentCmd(cmd_line);
