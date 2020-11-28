@@ -55,15 +55,14 @@ void alarmHandler(int sig_num) {
         if(it->first <= now) {
             pid_t pid = it->second.second;
             if (smash.jb.getJobByPid(pid) != nullptr) {
-                cout << "smash: " << it->second.first << " time out!" << endl;
+                cout << "smash: " << it->second.first << " timed out!" << endl;
+                kill(pid,SIGKILL);
             }
             smash.time_jb.erase(it++);
-            kill(pid,SIGKILL);
         }
         else {
             ++it;
         }
     }
-    // exit(0); // no!
 }
 

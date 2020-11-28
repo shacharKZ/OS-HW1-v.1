@@ -1003,7 +1003,7 @@ void TimeoutCommand::execute() {
         cmd_to_run.erase(cmd_to_run.find_last_of('&'));
     }
     Command * cmd = smash.CreateCommand(cmd_to_run.c_str());
-    cmd->type = TAKEOVER;
+    cmd->type = TAKEOVER; // TODO the trick
 
     time_t now = time(nullptr);
     pid_t pid = fork();
@@ -1021,7 +1021,8 @@ void TimeoutCommand::execute() {
         exit(0);
     }
 
-    smash.jb.addJob(full_cmd.c_str(), RUNNING, pid); // to fit the tests
+    smash.jb.addJob(full_cmd.c_str(), RUNNING, pid);
+
     smash.time_jb.push_back(pair<int,pair<string, int>>(now+sec, pair<string, int>(full_cmd, pid)));
     alarm(sec);
     if(!is_bg) {
@@ -1033,7 +1034,6 @@ void TimeoutCommand::execute() {
         smash.setcurrentPid(-1);
     }
     delete(cmd);
-
 }
 
 //void TimeoutCommand::execute() {
@@ -1350,6 +1350,8 @@ void JobsList::removeFinishedJobs(){
 
 
 void JobsList:: printJobsList(){
+    removeFinishedJobs(); // before printing remove useless
+
     for(auto job = jobs.begin(); job != jobs.end(); ++job){
         cout << "[" << job->getId()<< "] " << job->getCmd() << " : " << job->getPid() << " " << difftime(time(0), job->getStartTime()) << " secs";
         if(job->getStatus() == STOPPED)
