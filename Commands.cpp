@@ -894,8 +894,8 @@ Command* SmallShell::CreateCommand(const char *cmd_line) {
         return new ChpromptCommand(cmd_line);
     }
     else if (cmd_s == "ls" || cmd_s == "ls&") {
-        return new LSCommand(cmd_line);
-//        return new ExternalCommand("ls"); // TODO for testing !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
+//        return new LSCommand(cmd_line);
+        return new ExternalCommand("ls"); // TODO for testing !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
     }
     else if (cmd_s == "showpid" || cmd_s == "showpid&") {
         return new ShowPidCommand(cmd_line);
