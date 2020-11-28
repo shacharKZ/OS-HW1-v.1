@@ -720,10 +720,11 @@ void PipeCommand::execute() {
         exit(0);
     }
 
+    first_cmd = first_cmd +'&';
     Command* first_command = smash.SmallShell::CreateCommand(first_cmd.c_str());
     first_command->type = TAKEOVER;
     Command* second_command = smash.CreateCommand(second_cmd.c_str());
-    second_command->type = TAKEOVER;
+    second_command->type = NORMAL;
 
     int pid_wrapper = fork();
     if (pid_wrapper == -1) {
@@ -754,58 +755,34 @@ void PipeCommand::execute() {
                 perror("smash error: close failed");
                 exit(0);
             }
-//        close(fd[1]); // do not remove from the comment! adding this line maysle destroy everything
-
-            cout << "COUT: U should not C this for '|' and U should C this for '|&'" << endl; // TODO this is the real test if the pipe works
-//            cerr << "CERR: U should not C this for '|' and U should C this for '|&'" << endl;
-
             first_command->execute();
             delete(first_command);
             exit(0);
         }
 
-        int pid_second = fork();
-        if (pid_second == -1) {
-            perror("smash error: fork failed");
+        if (dup2(fd[0], 0) == -1) {
+            perror("smash error: dup failed");
             exit(0);
         }
-        else if (pid_second == 0) {
-            if(setpgrp() == -1) {
-                perror("smash error: setpgrp failed");
-                exit(0);
-            }
-            if (dup2(fd[0], 0) == -1) {
-                perror("smash error: dup failed");
-                exit(0);
-            }
-//        close(fd[0]); // do not remove from the comment! adding this line may destroy everything
-            if (close(fd[1]) == -1) {
-                perror("smash error: close failed");
-                exit(0);
-            }
-            second_command->execute();
-//            cerr << "HHHHHHHHHHHHHHHHHh"; // TODO
-            delete(second_command);
+        if (close(fd[0]) == -1) { // do not remove from the comment! adding this line may destroy everything
+            perror("smash error: close failed");
             exit(0);
         }
-
+        if (close(fd[1]) == -1) {
+            perror("smash error: close failed");
+            exit(0);
+        }
+        second_command->execute();
         delete(first_command);
         delete(second_command);
-//        cerr << "test1" << endl; // TODO
+
         if (waitpid(pid_first,NULL,WUNTRACED) == -1) {
             perror("smash error: waitpid failed");
-//            exit(0);
         }
-//        cerr << "test2" << endl; // TODO
-//        if (waitpid(pid_second,NULL,WUNTRACED) == -1) { // TODO this one FUCK everythin. why?!?!?!
-//            perror("smash error: waitpid failed");
-////            exit(0);
-//        }
-//        cerr << "test3" << endl; // TODO
         exit(0);
     }
 
-    delete(first_command);
+    delete(first_command); // TODO
     delete(second_command);
     if (close(fd[0]) == -1 || close(fd[1])) {
         perror("smash error: close failed");
