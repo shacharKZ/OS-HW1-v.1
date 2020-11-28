@@ -286,7 +286,7 @@ void ExternalCommand::execute() {
         if (is_bg) {
             smash.jb.addJob(*this, RUNNING, pid);
         }
-        else {
+        if(!is_bg) {
             smash.setcurrentPid(pid);
             smash.setcurrentCmd(cmd_line);
             if (waitpid(pid,NULL,WUNTRACED) == -1) {
@@ -610,6 +610,11 @@ RedirectionCommand::RedirectionCommand (const char* cmd_line) : Command(cmd_line
 
 void RedirectionCommand::execute() {
     string cmd_cpy = string(cmd_line);
+    bool is_bg = false;
+    if (_isBackgroundComamnd(cmd_line)) {
+        is_bg = true;
+        cmd_cpy.erase(cmd_cpy.find_last_of('&'));
+    }
     int split_index = cmd_cpy.find_first_of(">");
     if (split_index - 1 <= 0) {
         cerr << "smash error: invalid arguments" << endl;
@@ -653,6 +658,10 @@ void RedirectionCommand::execute() {
         close(1);
         dup(dup_org);
         return;
+    }
+
+    if (is_bg) {
+        real_cmd = real_cmd + '&';
     }
 
     smash.executeCommand(real_cmd.c_str());
@@ -885,8 +894,8 @@ Command* SmallShell::CreateCommand(const char *cmd_line) {
         return new ChpromptCommand(cmd_line);
     }
     else if (cmd_s == "ls" || cmd_s == "ls&") {
-//        return new LSCommand(cmd_line); // TODO !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
-        return new ExternalCommand("ls");
+        return new LSCommand(cmd_line);
+//        return new ExternalCommand("ls"); // TODO for testing !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
     }
     else if (cmd_s == "showpid" || cmd_s == "showpid&") {
         return new ShowPidCommand(cmd_line);
