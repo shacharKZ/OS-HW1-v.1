@@ -534,19 +534,24 @@ void CpCommand::execute() {
 
 
         //opening src
-        int srcFile=open(fullSrc,O_RDONLY, 0666);
+        int srcFile=open(args[1],O_RDONLY, 0666);
         if(srcFile == -1) {
             perror("smash error: open failed");
-            return;
+            exit(0);
         }
 
+        if (strcmp(fullSrc, fullDest) == 0) {
+          cout << "smash: " << args[1] << " was copied to " << args[2] << endl;
+          close(srcFile);
+          exit(0);
+        }
 
         // opening dest
-        int destFile=open(fullDest,(O_WRONLY|O_CREAT|O_TRUNC), 0666);
+        int destFile=open(args[2],(O_WRONLY|O_CREAT|O_TRUNC), 0666);
         if(destFile == -1) {
-            perror("smash error: open failed");
+            perror("smash error: open failed" );
             close(srcFile);
-            return;
+            exit(0);
         }
 
         std::size_t readSize = BUFFER_SIZE; // so will step into while
@@ -561,29 +566,21 @@ void CpCommand::execute() {
                 return;
             }
 
-            writeSize = write(destFile, buffer, BUFFER_SIZE);
+            writeSize = write(destFile, buffer, readSize);
             if (writeSize == -1) {
                 cout << "write size: " <<  writeSize << " read size " << readSize << endl;
                 cout << buffer << endl;
                 perror("smash error: write failed");
                 close(srcFile);
                 close(destFile);
-                return;
+                exit(0);
             }
         }
 
         cout << "smash: " << args[1] << " was copied to " << args[2] << endl;
         close(srcFile);
         close(destFile);
-        return;
-
-
-
-
-
-
-
-
+        exit(0);
 
     }
     else { // father. original proc
@@ -894,8 +891,8 @@ Command* SmallShell::CreateCommand(const char *cmd_line) {
         return new ChpromptCommand(cmd_line);
     }
     else if (cmd_s == "ls" || cmd_s == "ls&") {
-//        return new LSCommand(cmd_line);
-        return new ExternalCommand("ls"); // TODO for testing !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
+        return new LSCommand(cmd_line);
+        // return new ExternalCommand("ls"); // TODO for testing !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
     }
     else if (cmd_s == "showpid" || cmd_s == "showpid&") {
         return new ShowPidCommand(cmd_line);
