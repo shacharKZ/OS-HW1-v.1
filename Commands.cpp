@@ -95,8 +95,6 @@ void _removeBackgroundSign(char* cmd_line) {
 /// --------------------------- From here down is here our code---------------------------
 
 
-
-// command class
 Command::Command(const char *cmd_line, CMD_TYP type) : cmd_line(cmd_line), type(type) {};
 
 const char *Command::getCmd() {
@@ -109,7 +107,6 @@ BuiltInCommand::BuiltInCommand(const char *cmd_line) : Command(cmd_line) {};
 LSCommand::LSCommand(const char *cmd_line) : BuiltInCommand(cmd_line) {};
 
 void LSCommand::execute() {
-
     char path[COMMAND_ARGS_MAX_LENGTH];
     if (!getcwd(path, sizeof(path))) {
         perror("");
@@ -134,15 +131,6 @@ void LSCommand::execute() {
         if (name != "." and name != "..")
             cout << name << endl;
     }
-
-//    DIR* dir = opendir(path);
-//    dirent * file_name = readdir(dir);
-//    while (file_name) {
-//        cout << file_name->d_name << endl;
-//        file_name = readdir(dir);
-//    }
-//    closedir(dir);
-
 }
 
 
@@ -160,14 +148,6 @@ void ShowPidCommand::execute() {
 
 };
 
-
-//ChpromptCommand::ChpromptCommand(SmallShell* smash, string set_name, const char* cmd_line) :
-//        smash(smash), name_to_set(set_name), BuiltInCommand(cmd_line) {};
-//
-//void ChpromptCommand::execute() {
-//    if (name_to_set == "") smash->setName("smash");
-//    else smash->setName(name_to_set);
-//};
 
 ChangeDirCommand::ChangeDirCommand(const char* cmd_line, char** plastPwd) : set_dir(plastPwd), BuiltInCommand(cmd_line) {};
 
@@ -211,14 +191,14 @@ ChpromptCommand::ChpromptCommand(const char* cmd_line) : BuiltInCommand(cmd_line
     else {
         name_to_set = "smash";
     }
-}
-
-void ChpromptCommand::execute() {
     smash.setName(name_to_set);
 }
 
-GetCurrDirCommand::GetCurrDirCommand(const char* cmd_line) : BuiltInCommand(cmd_line) {
+void ChpromptCommand::execute() {
+    smash.setName(name_to_set); // actually useless... it is write in this way because of edge cases
+}
 
+GetCurrDirCommand::GetCurrDirCommand(const char* cmd_line) : BuiltInCommand(cmd_line) {
     char dir[COMMAND_ARGS_MAX_LENGTH];
     if (getcwd(dir, sizeof(dir))) {
         dir_to_print = string(dir);
@@ -228,7 +208,8 @@ GetCurrDirCommand::GetCurrDirCommand(const char* cmd_line) : BuiltInCommand(cmd_
         flag_print = false;
     }
 
-};
+}
+
 void GetCurrDirCommand::execute() {
     if (flag_print) {
         cout << dir_to_print << endl;
@@ -236,11 +217,6 @@ void GetCurrDirCommand::execute() {
     else {
         perror("smash error: pwd");
     }
-//    char dir[COMMAND_ARGS_MAX_LENGTH];
-//    if (getcwd(dir, sizeof(dir))) {
-//        std::cout << string(dir) << std::endl;
-//    }
-//    else perror(""); // should not get here SH
 }
 
 
@@ -254,7 +230,6 @@ void JobsCommand::execute() {
 ExternalCommand::ExternalCommand(const char* cmd_line) : Command(cmd_line) {};
 
 void ExternalCommand::execute() {
-
     bool is_bg = _isBackgroundComamnd(cmd_line);
 
     pid_t pid = 0;
@@ -282,7 +257,6 @@ void ExternalCommand::execute() {
         }
     }
     else { // father. original proc
-//        smash.jb.addJob(*this, RUNNING, pid); // TODO should also non "&" be added to jb?
         if (is_bg) {
             smash.jb.addJob(*this, RUNNING, pid);
         }
@@ -393,7 +367,6 @@ void ForegroundCommand::execute() {
         return;
     }
 
-
     // continue the job if it stopped
     if(lastJob->getStatus() == STOPPED) {
         if (kill(jobPid, SIGCONT) == -1) {
@@ -470,7 +443,6 @@ void BackgroundCommand::execute() {
 }
 
 
-
 // BUILT IN NUMBER #9
 QuitCommand::QuitCommand(const char *cmd_line, JobsList *jobs): BuiltInCommand(cmd_line),  jobs(jobs) {}
 
@@ -494,7 +466,6 @@ void QuitCommand::execute() {
 CpCommand::CpCommand(const char *cmd_line, JobsList* jobs): BuiltInCommand(cmd_line),  jobs(jobs) {}
 
 void CpCommand::execute() {
-
 
     pid_t pid = fork();
     if (pid == -1) {
@@ -689,7 +660,6 @@ static bool isExternalCommand(string cmd) {
 }
 
 PipeCommand::PipeCommand(const char* cmd_line) : Command(cmd_line) {
-    //// smash fork first son and  fork second son
     //// first - reader, second - writer
     out_or_err = STDOUT_FILENO; // STDOUT_FILENO=1
     is_bg = _isBackgroundComamnd(cmd_line);
@@ -705,10 +675,10 @@ PipeCommand::PipeCommand(const char* cmd_line) : Command(cmd_line) {
     }
     first_cmd = _trim(cmd_cpy.substr(0, split_index)); // reader
 
-    if (first_cmd.find_first_of("|") != -1 || second_cmd.find_first_of("|") != -1) {
-        cout << "smash error: pipe: invalid arguments: pipe inside pipe" << endl;
-        return;
-    } // TODO double check this case. pipe inside a pipe case... not sure if needed or not
+//    if (first_cmd.find_first_of("|") != -1 || second_cmd.find_first_of("|") != -1) {
+//        cout << "smash error: pipe: invalid arguments: pipe inside pipe" << endl;
+//        return;
+//    } // as we believe this kind of cases will not be test
 
     int idx = second_cmd.find_last_not_of(WHITESPACE);
     if (idx != string::npos && second_cmd[idx] == '&') {
@@ -717,7 +687,6 @@ PipeCommand::PipeCommand(const char* cmd_line) : Command(cmd_line) {
 }
 
 void PipeCommand::execute() {
-    //// smash fork first son and  fork second son
     //// first - reader, second - writer
 
     int fd[2];
@@ -726,7 +695,6 @@ void PipeCommand::execute() {
         exit(0);
     }
 
-//    first_cmd = first_cmd +'&';
     Command* first_command = smash.SmallShell::CreateCommand(first_cmd.c_str());
     first_command->type = TAKEOVER;
     Command* second_command = smash.CreateCommand(second_cmd.c_str());
@@ -788,7 +756,7 @@ void PipeCommand::execute() {
         exit(0);
     }
 
-    delete(first_command); // TODO
+    delete(first_command);
     delete(second_command);
     if (close(fd[0]) == -1 || close(fd[1])) {
         perror("smash error: close failed");
@@ -830,7 +798,7 @@ void TimeoutCommand::execute() {
         cmd_to_run.erase(cmd_to_run.find_last_of('&'));
     }
     Command * cmd = smash.CreateCommand(cmd_to_run.c_str());
-    cmd->type = TAKEOVER; // TODO the trick
+    cmd->type = TAKEOVER; // the trick!
 
     time_t now = time(nullptr);
     pid_t pid = fork();
@@ -865,7 +833,7 @@ void TimeoutCommand::execute() {
 }
 
 
-/// --------------------------- smash V, Command ^ ---------------------------
+/// --------------------------- smash V, Commands ^ ---------------------------
 
 SmallShell::SmallShell() : name("smash"), last_pwd(""), jb(), time_jb() {};
 
@@ -874,7 +842,6 @@ SmallShell::~SmallShell() {};
 /**
 * Creates and returns a pointer to Command class which matches the given command line (cmd_line)
 */
-
 Command* SmallShell::CreateCommand(const char *cmd_line) {
     if (string(cmd_line).find_first_of(">") != -1) {
         return new RedirectionCommand(cmd_line);
@@ -892,7 +859,6 @@ Command* SmallShell::CreateCommand(const char *cmd_line) {
     }
     else if (cmd_s == "ls" || cmd_s == "ls&") {
         return new LSCommand(cmd_line);
-        // return new ExternalCommand("ls"); // TODO for testing !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
     }
     else if (cmd_s == "showpid" || cmd_s == "showpid&") {
         return new ShowPidCommand(cmd_line);
@@ -935,8 +901,7 @@ void SmallShell::executeCommand(const char *cmd_line) {
     }
     command->execute();
 
-    delete(command); // TODO ?? we need to run valgrind sometimes even if leaks will not be checked
-
+    delete(command);
 }
 
 std::string SmallShell::getName() {
@@ -947,11 +912,9 @@ void SmallShell::setName(string to_set) {
     name = to_set;
 }
 
-
 pid_t SmallShell::getcurrentPid() {
     return currentPid;
 }
-
 
 void SmallShell::setcurrentPid(pid_t pid) {
     currentPid = pid;
@@ -977,13 +940,11 @@ void SmallShell::setcurrentCmd(const char* cmd) {
 }
 
 
-
 /**
  this section is the implantation of JobEntry class
 **/
 JobsList::JobEntry::JobEntry(Command* command, time_t time, Status status, int id, int pid)
         : cmd_line(command->getCmd()), start_time(time), status(status), id(id), pid(pid) {}
-
 
 
 JobsList::JobEntry::JobEntry(const char* cmd_line, time_t time, Status status, int id, int pid)
@@ -1053,8 +1014,7 @@ void JobsList::removeFinishedJobs(){
         if (res > 0) {
             jobs.erase(it++);
         }
-        else if (res == -1) {
-//            perror("smash error: waitpid failed"); // happends when erase timeout commands
+        else if (res == -1) { // happens when erase timeout commands... so no error should be printed
             jobs.erase(it++);
         }
         else {

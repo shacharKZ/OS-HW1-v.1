@@ -1,12 +1,12 @@
 #include <iostream>
 #include <unistd.h>
-#include <sys/wait.h> // TODO SH
+#include <sys/wait.h>
 #include <signal.h>
 #include "Commands.h"
 #include "signals.h"
 #include <assert.h>
 
-SmallShell& smash = SmallShell::getInstance(); // TODO trick to be check in future SH
+SmallShell& smash = SmallShell::getInstance();
 
 int main(int argc, char* argv[]) {
     if(signal(SIGTSTP , ctrlZHandler)==SIG_ERR) { // TODO
@@ -18,9 +18,6 @@ int main(int argc, char* argv[]) {
     if(signal(SIGALRM, alarmHandler) == SIG_ERR) {
         perror("smash error: failed to set alarm handler");
     }
-
-    //TODO: setup sig alarm handler
-
 
     while(true) {
         std::cout << smash.getName() << "> "; // TODO: change this (why?)

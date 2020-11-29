@@ -11,12 +11,11 @@ using namespace std;
 #define HISTORY_MAX_RECORDS (50)
 
 enum Status{STOPPED, RUNNING};
-enum CMD_TYP{NORMAL, TAKEOVER, PIPE, REDIRECT};
+enum CMD_TYP{NORMAL, TAKEOVER};
 
 
 class Command {
 // TODO: Add your data members
-
 protected:
     const char* cmd_line;
 public:
@@ -25,8 +24,6 @@ public:
     CMD_TYP type;
     virtual void execute() = 0;
     const char* getCmd();
-    //virtual void prepare();
-    //virtual void cleanup();
     // TODO: Add your extra methods if needed
 };
 
@@ -70,8 +67,6 @@ public:
     explicit RedirectionCommand(const char* cmd_line);
     virtual ~RedirectionCommand() {}
     void execute() override;
-    //void prepare() override;
-    //void cleanup() override;
 };
 
 class ChangeDirCommand : public BuiltInCommand {
@@ -94,7 +89,6 @@ public:
 
 class ShowPidCommand : public BuiltInCommand {
     pid_t pid;
-    bool flag_print;
 public:
     ShowPidCommand(const char* cmd_line);
     virtual ~ShowPidCommand() = default;
@@ -118,7 +112,7 @@ public:
     void execute() override;
 };
 
-class CommandsHistory { // TODO WTF
+class CommandsHistory { // TODO what what?
 protected:
     class CommandHistoryEntry {
         // TODO: Add your data members
@@ -131,7 +125,7 @@ public:
     void printHistory();
 };
 
-class HistoryCommand : public BuiltInCommand { // TODO WTF??
+class HistoryCommand : public BuiltInCommand { // TODO what what
     // TODO: Add your data members
 public:
     HistoryCommand(const char* cmd_line, CommandsHistory* history);
@@ -180,7 +174,6 @@ public:
     JobEntry *getLastJob();
     JobEntry * getJobById(int jobId);
     JobEntry * getJobByPid(pid_t pid);
-    //TODO continue from here - ofir
 
 };
 
@@ -260,12 +253,10 @@ public:
 
         return instance;
     }
-    ~SmallShell(); // TODO probably future valgrind problems.... SH
+    ~SmallShell();
 
     // methods
-    Command* createCommand(const char *cmd_line);
     void executeCommand(const char* cmd_line);
-
     string getName();
     void setName(std::string set_name);
     pid_t getcurrentPid();
@@ -314,8 +305,5 @@ public:
         }
         return n;
     }
-
-
-
 
 };
