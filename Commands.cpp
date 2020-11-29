@@ -756,6 +756,9 @@ void PipeCommand::execute() {
         exit(0);
     }
 
+    // if we ever want to send signals to pipe we need to add smash.pipe_extra_jb.append....
+    // first and second cmd pid are pid_wrapper+1 and pid_wrapper+2
+
     delete(first_command);
     delete(second_command);
     if (close(fd[0]) == -1 || close(fd[1])) {

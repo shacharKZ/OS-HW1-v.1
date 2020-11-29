@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <cctype>
+#include <map>
 
 using namespace std;
 
@@ -238,6 +239,7 @@ public:
     // fields
     JobsList jb;
     vector<pair<int, pair<string, pid_t>>> time_jb;
+//    map<pid_t , pair<pid_t , pid_t>> pipe_extra_jb; // TODO if we ever want to set signals for pipes
     string last_pwd;
 
     // Constructors
