@@ -762,8 +762,10 @@ void PipeCommand::execute() {
         perror("smash error: close failed");
         return;
     }
-    smash.jb.addJob(*this, RUNNING, pid_wrapper);
-    if(!is_bg) {
+    if (is_bg) {
+        smash.jb.addJob(*this, RUNNING, pid_wrapper);
+    }
+    else {
         smash.setcurrentPid(pid_wrapper);
         smash.setcurrentCmd(cmd_line);
         if (waitpid(pid_wrapper,NULL,WUNTRACED) == -1) {
