@@ -169,7 +169,7 @@ void ChangeDirCommand::execute() {
 
     char dir[COMMAND_ARGS_MAX_LENGTH]; // get current pwd to store in smash.last_pwd (OLDPWD)
     if (!getcwd(dir, sizeof(dir))) {
-        perror("smash error: chdir failed"); // TODO
+        perror("smash error: cd failed"); // chdir failed
         return;
     }
 
@@ -177,7 +177,7 @@ void ChangeDirCommand::execute() {
         smash.last_pwd = string(dir);
     }
     else {
-        perror("smash error: chdir failed"); // TODO
+        perror("smash error: cd failed"); // chdir failed
     }
 }
 
@@ -233,7 +233,7 @@ void ExternalCommand::execute() {
     bool is_bg = _isBackgroundComamnd(cmd_line);
 
     pid_t pid = 0;
-    if (this->type != TAKEOVER) { // TODO the trick
+    if (this->type != TAKEOVER) { // the trick
         pid = fork();
     }
 
@@ -355,7 +355,7 @@ void ForegroundCommand::execute() {
         lastJob = jobs->getJobById(jobId);
 
         if (!lastJob) {
-            cout << "smash error: fg: job-id " << jobId << " does not exist" << endl; // TODO cerr? SH
+            cout << "smash error: fg: job-id " << jobId << " does not exist" << endl; // cerr? SH
             return;
         } else {
             jobPid = lastJob->getPid();
@@ -363,7 +363,7 @@ void ForegroundCommand::execute() {
     }
 
     else {
-        cout << "smash error: fg: invalid arguments" << endl; // TODO cerr? SH
+        cout << "smash error: fg: invalid arguments" << endl; // cerr? SH
         return;
     }
 
@@ -450,7 +450,7 @@ void QuitCommand::execute() {
     char* args[COMMAND_MAX_ARGS + 1];
     int argsNum = _parseCommandLine(cmd_line, args);
 
-    // TODO check quit blabla kill
+    // check quit blabla kill
     for (int i=1; i < argsNum; i++) {
         if (strcmp(args[i], "kill") == 0) {
             cout << "smash: sending SIGKILL signal to " << jobs->getNumOfJobs() << " jobs:" << endl;
@@ -491,8 +491,8 @@ void CpCommand::execute() {
         int argsNum = _parseCommandLine(cmd_cpy, args);
 
         if (argsNum != 3) {
-            // TODO should we print error?
-            cout << "smash error: invalid arguments" << endl; // TODO like this?
+            // should we print error?
+            cout << "smash error: invalid arguments" << endl;
             exit(0);
         }
 
