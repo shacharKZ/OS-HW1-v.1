@@ -345,7 +345,7 @@ void ForegroundCommand::execute() {
         if (lastJob) {
             jobPid = lastJob->getPid();
         } else {
-            cout << "smash error: fg: jobs list is empty" << endl;
+            cerr << "smash error: fg: jobs list is empty" << endl;
             return;
         }
     }
@@ -355,7 +355,7 @@ void ForegroundCommand::execute() {
         lastJob = jobs->getJobById(jobId);
 
         if (!lastJob) {
-            cout << "smash error: fg: job-id " << jobId << " does not exist" << endl; // cerr? SH
+            cerr << "smash error: fg: job-id " << jobId << " does not exist" << endl; // cerr? SH
             return;
         } else {
             jobPid = lastJob->getPid();
@@ -363,7 +363,7 @@ void ForegroundCommand::execute() {
     }
 
     else {
-        cout << "smash error: fg: invalid arguments" << endl; // cerr? SH
+        cerr << "smash error: fg: invalid arguments" << endl; // cerr? SH
         return;
     }
 
@@ -406,7 +406,7 @@ void BackgroundCommand::execute() {
         if (lastJob) {
             jobPid = lastJob->getPid();
         } else {
-            cout << "smash error: bg: there is no stopped jobs to resume" << endl;
+            cerr << "smash error: bg: there is no stopped jobs to resume" << endl;
             return;
         }
     }
@@ -426,7 +426,7 @@ void BackgroundCommand::execute() {
     }
 
     else {
-        cout << "smash error: bg: invalid arguments" << endl;
+        cerr << "smash error: bg: invalid arguments" << endl;
         return;
     }
 
@@ -492,7 +492,7 @@ void CpCommand::execute() {
 
         if (argsNum != 3) {
             // should we print error?
-            cout << "smash error: invalid arguments" << endl;
+            cerr << "smash error: invalid arguments" << endl;
             exit(0);
         }
 
